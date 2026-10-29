@@ -48,6 +48,12 @@ function tx(fn) {
   }
 }
 
+function asegurarColumna(tabla, columna, tipo) {
+  const columnas = db.prepare(`PRAGMA table_info(${tabla})`).all();
+  if (columnas.some((item) => item.name === columna)) return;
+  db.exec(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${tipo}`);
+}
+
 function registrarAuditoria(registroId, accion, campo, valorAnt, valorNuevo, usuario, pcName) {
   db.prepare(
     `INSERT INTO log_auditoria
@@ -133,6 +139,15 @@ function initDb() {
       clave TEXT PRIMARY KEY,
       valor TEXT
     );
+  `);
+
+  asegurarColumna("agenda", "sistema", "TEXT DEFAULT ''");
+  asegurarColumna("agenda", "dependencia_codigo", "TEXT DEFAULT ''");
+  asegurarColumna("agenda", "dependencia_nombre", "TEXT DEFAULT ''");
+  asegurarColumna("agenda", "circunscripcion", "TEXT DEFAULT ''");
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_agenda_dependencia_fecha
+      ON agenda(sistema, dependencia_codigo, fecha)
   `);
 
   const cantFeriados = db.prepare(

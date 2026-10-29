@@ -52,7 +52,7 @@ const VACIO = {
   detenido: false,
 };
 
-export default function Agenda({ catalogos, rol, usuario }) {
+export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }) {
   const [centro, setCentro] = useState(`${hoy().slice(0, 7)}-01`);
   const [seleccionado, setSeleccionado] = useState(hoy());
   const [dias, setDias] = useState({});
@@ -70,25 +70,39 @@ export default function Agenda({ catalogos, rol, usuario }) {
 
   const visibles = useMemo(() => mesesVisibles(centro), [centro]);
 
+  const sistema = dependencia?.sistema || "";
+  const codigo = dependencia?.codigo || "";
+
   const cargarCalendario = useCallback(async () => {
+    if (!sistema || !codigo) {
+      setDias({});
+      return;
+    }
     const desde = visibles[0].inicio;
     const ultimo = parse(visibles[2].inicio);
     const hasta = isoDe(new Date(ultimo.getFullYear(), ultimo.getMonth() + 1, 0));
-    const data = await api(`/agenda/calendario?desde=${desde}&hasta=${hasta}`);
+    const params = new URLSearchParams({ desde, hasta, sistema, codigo });
+    const data = await api(`/agenda/calendario?${params}`);
     setDias(data.dias);
-  }, [visibles]);
+  }, [visibles, sistema, codigo]);
 
   const cargarDia = useCallback(async () => {
+    if (!sistema || !codigo) {
+      setEventos([]);
+      return;
+    }
     const params = new URLSearchParams({
       fecha: seleccionado,
       q,
       responsable,
       pendientes: pendientes ? "1" : "0",
+      sistema,
+      codigo,
     });
     const data = await api(`/agenda?${params}`);
     setEventos(data.eventos);
     setActivo((prev) => data.eventos.find((e) => e.id === prev?.id) || null);
-  }, [seleccionado, q, responsable, pendientes]);
+  }, [seleccionado, q, responsable, pendientes, sistema, codigo]);
 
   useEffect(() => {
     cargarCalendario().catch((err) => setError(err.message));
@@ -127,9 +141,9 @@ export default function Agenda({ catalogos, rol, usuario }) {
     setError("");
   }
 
-  async function guardarForm(confirmarInhabil = false) {
+  async function guardarForm(confirmarInhabil = false, formulario = form) {
     setError("");
-    const body = { ...form, confirmarInhabil };
+    const body = { ...formulario, confirmarInhabil, sistema, codigo };
     try {
       const res = form.id
         ? await api(`/agenda/${form.id}`, { method: "PUT", body })
@@ -143,13 +157,15 @@ export default function Agenda({ catalogos, rol, usuario }) {
         q,
         responsable,
         pendientes: pendientes ? "1" : "0",
+        sistema,
+        codigo,
       });
       const dia = await api(`/agenda?${params}`);
       setEventos(dia.eventos);
       await cargarCalendario();
     } catch (err) {
       if (err.data?.code === "INHABIL") {
-        if (window.confirm(`${err.data.motivo}\n\n¿Cargar igualmente?`)) return guardarForm(true);
+        if (window.confirm(`${err.data.motivo}\n\n¿Cargar igualmente?`)) return guardarForm(true, formulario);
         return;
       }
       setError(err.message);
@@ -207,7 +223,7 @@ export default function Agenda({ catalogos, rol, usuario }) {
     <section className="panel agenda">
       <header className="panel-head">
         <h2>Agenda</h2>
-        <button type="button" className="btn btn-primary" onClick={() => abrirNuevo()}>Nueva audiencia</button>
+        <button type="button" className="btn btn-primary" onClick={() => abrirNuevo()} disabled={!dependencia}>Nueva audiencia</button>
       </header>
       <div className="agenda-tools">
         <button type="button" onClick={borrar}>Eliminar</button>
@@ -223,6 +239,18 @@ export default function Agenda({ catalogos, rol, usuario }) {
         <button type="button" onClick={() => { setSeleccionado(hoy()); setCentro(`${hoy().slice(0, 7)}-01`); }}>Hoy</button>
       </div>
       {error && <p className="banner-error">{error}</p>}
+      {fuentes && !dependencia && (
+        <p className="banner-error">
+          El usuario no tiene dependencias habilitadas en los Sistemas de Gestión de Expedientes Digitales
+        </p>
+      )}
+      {dependencia && (
+        <p className="dep-actual">
+          {dependencia.sistema} — {dependencia.nombre}
+          {dependencia.circunscripcion ? ` — ${dependencia.circunscripcion}` : ""}
+          {dependencia.titularidad ? ` — ${dependencia.titularidad}` : ""}
+        </p>
+      )}
       {info && <p className="banner-ok">{info}</p>}
 
       <div className="cal-row">
@@ -283,7 +311,7 @@ export default function Agenda({ catalogos, rol, usuario }) {
 
       {form && (
         <Modal title={form.id ? "Modificar evento" : "Agregar audiencia"} onClose={() => setForm(null)}>
-          <FormEvento form={form} setForm={setForm} tipos={tipos} onSubmit={() => guardarForm(false)} />
+          <FormEvento form={form} setForm={setForm} tipos={tipos} dependencia={dependencia} onSubmit={(datos) => guardarForm(false, datos)} />
         </Modal>
       )}
       {copiar && (
@@ -302,7 +330,7 @@ export default function Agenda({ catalogos, rol, usuario }) {
       )}
       {listado && (
         <Modal title="Listado de agendamientos" onClose={() => setListado(false)} wide>
-          <Listado usuarios={catalogos.usuarios} tipos={tipos} onClose={() => setListado(false)} onError={setError} />
+          <Listado usuarios={catalogos.usuarios} tipos={tipos} dependencia={dependencia} onClose={() => setListado(false)} onError={setError} />
         </Modal>
       )}
     </section>
@@ -344,8 +372,10 @@ function MiniMes({ anio, mes, dias, seleccionado, onSelect }) {
   );
 }
 
-function FormEvento({ form, setForm, tipos, onSubmit }) {
+function FormEvento({ form, setForm, tipos, dependencia, onSubmit }) {
   const [aviso, setAviso] = useState("");
+  const [causa, setCausa] = useState(null);
+  const [buscando, setBuscando] = useState(false);
   useEffect(() => {
     if (!form.fecha) return;
     api(`/agenda/dia?fecha=${form.fecha}`)
@@ -353,8 +383,42 @@ function FormEvento({ form, setForm, tipos, onSubmit }) {
       .catch(() => setAviso(""));
   }, [form.fecha]);
 
+  async function buscarCausa() {
+    const numero = form.expediente.trim();
+    if (!numero || !dependencia) return;
+    setBuscando(true);
+    setCausa(null);
+    try {
+      const params = new URLSearchParams({
+        numero,
+        sistema: dependencia.sistema,
+        codigo: dependencia.codigo,
+      });
+      const data = await api(`/agenda/expediente?${params}`);
+      setCausa(data);
+      if (data.encontrado && data.caratula) {
+        setForm((prev) => (
+          prev.descripcion.trim() ? prev : { ...prev, descripcion: data.caratula }
+        ));
+      }
+      return data;
+    } catch (err) {
+      setCausa({ error: err.message });
+      return null;
+    } finally {
+      setBuscando(false);
+    }
+  }
+
+  async function enviar(event) {
+    event.preventDefault();
+    const data = await buscarCausa();
+    const descripcion = form.descripcion.trim() || (data?.encontrado ? data.caratula : "");
+    onSubmit({ ...form, descripcion });
+  }
+
   return (
-    <form className="stack" onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
+    <form className="stack" onSubmit={enviar}>
       <label>Tipo
         <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} required>
           <option value="">Seleccionar…</option>
@@ -362,7 +426,27 @@ function FormEvento({ form, setForm, tipos, onSubmit }) {
           {form.tipo && !tipos.includes(form.tipo) && <option>{form.tipo}</option>}
         </select>
       </label>
-      <label>Expediente<input value={form.expediente} onChange={(e) => setForm({ ...form, expediente: e.target.value })} required /></label>
+      <label>Expediente
+        <input
+          value={form.expediente}
+          onChange={(e) => setForm({ ...form, expediente: e.target.value })}
+          onBlur={buscarCausa}
+          required
+        />
+      </label>
+      {buscando && <p className="muted">Buscando la causa…</p>}
+      {causa?.error && <p className="form-error">{causa.error}</p>}
+      {causa?.encontrado && (
+        <p className="ok-text">
+          {causa.origen}: {causa.caratula}
+          {causa.proceso ? ` — ${causa.proceso}` : ""}
+          {causa.detalle ? ` — ${causa.detalle}` : ""}
+          {causa.radicacion ? ` — Radica en ${causa.radicacion}` : ""}
+        </p>
+      )}
+      {causa && !causa.encontrado && !causa.error && (
+        <p className="inhabil">No se encontró el expediente en {dependencia?.sistema}.</p>
+      )}
       <div className="split">
         <label>Fecha<input type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} required /></label>
         <label>Hora<input value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} placeholder="09:00" /></label>
@@ -456,7 +540,7 @@ function Plazos({ fecha, onIr, onCrear }) {
   );
 }
 
-function Listado({ usuarios, tipos, onClose, onError }) {
+function Listado({ usuarios, tipos, dependencia, onClose, onError }) {
   const [responsable, setResponsable] = useState("Todos");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
@@ -478,6 +562,10 @@ function Listado({ usuarios, tipos, onClose, onError }) {
     });
     if (desde) params.set("desde", desde);
     if (hasta) params.set("hasta", hasta);
+    if (dependencia) {
+      params.set("sistema", dependencia.sistema);
+      params.set("codigo", dependencia.codigo);
+    }
     try {
       await descargar(`/agenda/export?${params}`, "agendamientos.csv");
       onClose();

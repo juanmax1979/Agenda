@@ -2,6 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const { getDb } = require("./db");
+const { dependenciasHabilitadas } = require("./fuentes");
 
 const router = express.Router();
 
@@ -33,6 +34,44 @@ function soloAdmin(req, res, next) {
 router.get("/usuarios", (_req, res) => {
   const filas = getDb().prepare("SELECT nombre FROM usuarios ORDER BY nombre").all();
   res.json(filas.map((f) => f.nombre));
+});
+
+router.post("/entrada", async (req, res) => {
+  try {
+    const datos = await dependenciasHabilitadas();
+    const nombre = String(datos.identidad.nombre || datos.identidad.login || "").trim();
+    if (!nombre) {
+      return res.status(401).json({ error: "No se detectó el usuario de Windows." });
+    }
+    const existente = getDb().prepare("SELECT rol FROM usuarios WHERE nombre = ?").get(nombre);
+    const rol = existente?.rol || "user";
+    if (!existente) {
+      getDb().prepare("INSERT INTO usuarios (nombre, password, rol) VALUES (?, ?, ?)").run(
+        nombre,
+        bcrypt.hashSync(crypto.randomBytes(24).toString("hex"), 10),
+        rol
+      );
+    }
+    const token = crypto.randomBytes(32).toString("hex");
+    getDb()
+      .prepare(
+        `INSERT INTO sesiones (usuario, pc_name, fecha_login, token)
+         VALUES (?, ?, datetime('now', 'localtime'), ?)
+         ON CONFLICT(usuario) DO UPDATE SET pc_name = excluded.pc_name, fecha_login = excluded.fecha_login, token = excluded.token`
+      )
+      .run(nombre, cliente(req), token);
+    res.json({
+      token,
+      usuario: nombre,
+      rol,
+      identidad: datos.identidad,
+      dependencias: datos.dependencias,
+      iure: datos.iure,
+      sigi: datos.sigi,
+    });
+  } catch (error) {
+    res.status(502).json({ error: error.message || "No se pudieron consultar SIGI e IURE." });
+  }
 });
 
 router.post("/login", (req, res) => {
@@ -72,6 +111,14 @@ router.post("/logout", exigir, (req, res) => {
 
 router.get("/me", exigir, (req, res) => {
   res.json({ usuario: req.usuario, rol: req.rol });
+});
+
+router.get("/dependencias", exigir, async (_req, res) => {
+  try {
+    res.json(await dependenciasHabilitadas());
+  } catch (error) {
+    res.status(502).json({ error: error.message || "No se pudieron consultar SIGI e IURE." });
+  }
 });
 
 router.post("/password", exigir, (req, res) => {

@@ -1,30 +1,41 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import Login from "./Login.jsx";
+import Entrada from "./Login.jsx";
 import Shell from "./Shell.jsx";
-import { limpiarSesion, sesionGuardada } from "./api.js";
+import { limpiarSesion } from "./api.js";
 import "./styles.css";
 
 function App() {
-  const [sesion, setSesion] = useState(sesionGuardada);
+  const [acceso, setAcceso] = useState(null);
+  const [dependencia, setDependencia] = useState(null);
 
   useEffect(() => {
     function vencer() {
       limpiarSesion();
-      setSesion(null);
+      setDependencia(null);
+      setAcceso(null);
     }
     window.addEventListener("sesion-vencida", vencer);
     return () => window.removeEventListener("sesion-vencida", vencer);
   }, []);
 
-  if (!sesion) return <Login onLogin={setSesion} />;
+  if (!acceso || !dependencia) {
+    return (
+      <Entrada
+        onEntrar={(datos, dep) => {
+          setAcceso(datos);
+          setDependencia(dep);
+        }}
+      />
+    );
+  }
+
   return (
     <Shell
-      sesion={sesion}
-      onLogout={() => {
-        limpiarSesion();
-        setSesion(null);
-      }}
+      sesion={acceso}
+      dependencia={dependencia}
+      onDependencia={setDependencia}
+      onCambiarDependencia={() => setDependencia(null)}
     />
   );
 }

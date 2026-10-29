@@ -1,3 +1,4 @@
+require("./src/env").cargar();
 const express = require("express");
 const cors = require("cors");
 const { initDb, logSistema } = require("./src/db");

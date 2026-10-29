@@ -1,6 +1,7 @@
 const express = require("express");
 const { getDb, tx, registrarAuditoria } = require("./db");
 const { exigir } = require("./auth");
+const { dependenciaHabilitada, datosExpediente } = require("./fuentes");
 const { cargarFeriados, esDiaHabil, calcularPlazo, diasEnRango } = require("./calendario");
 const {
   TIPOS_AGENDA_BLOQUEANTES,
@@ -36,6 +37,14 @@ router.get("/catalogos", (_req, res) => {
     usuarios,
   });
 });
+
+function sqlDependencia(query, params) {
+  const sistema = String(query.sistema || "").trim().toUpperCase();
+  const codigo = String(query.codigo || "").trim();
+  if (!sistema || !codigo) return "";
+  params.push(sistema, codigo);
+  return " AND ((sistema = ? AND dependencia_codigo = ?) OR dependencia_codigo IS NULL OR dependencia_codigo = '')";
+}
 
 function plantillaDe(tipo) {
   const db = getDb();
@@ -118,7 +127,12 @@ router.get("/calendario", (req, res) => {
   if ((hasta - desde) / 86400000 > 120) {
     return res.status(400).json({ error: "El rango supera los 120 días." });
   }
-  res.json({ dias: diasEnRango(desde, hasta) });
+  res.json({
+    dias: diasEnRango(desde, hasta, {
+      sistema: String(req.query.sistema || "").trim().toUpperCase(),
+      codigo: String(req.query.codigo || "").trim(),
+    }),
+  });
 });
 
 router.get("/dia", (req, res) => {
@@ -128,20 +142,24 @@ router.get("/dia", (req, res) => {
   res.json({ fecha: isoFecha(fecha), ...estado });
 });
 
-router.get("/avisos", (_req, res) => {
+router.get("/avisos", (req, res) => {
   const hoy = isoFecha(new Date());
+  const filtroHoy = [];
+  const filtroAtrasados = [];
+  const clausulaHoy = sqlDependencia(req.query, filtroHoy);
+  const clausulaAtrasados = sqlDependencia(req.query, filtroAtrasados);
   const deHoy = getDb()
     .prepare(
       `SELECT tipo, expediente, hora, detenido FROM agenda
-       WHERE fecha = ? AND estado = 'Pendiente' ORDER BY hora ASC`
+       WHERE fecha = ? AND estado = 'Pendiente'${clausulaHoy} ORDER BY hora ASC`
     )
-    .all(hoy);
+    .all(hoy, ...filtroHoy);
   const atrasados = getDb()
     .prepare(
       `SELECT tipo, expediente, fecha, detenido FROM agenda
-       WHERE fecha < ? AND estado = 'Pendiente' ORDER BY fecha ASC`
+       WHERE fecha < ? AND estado = 'Pendiente'${clausulaAtrasados} ORDER BY fecha ASC`
     )
-    .all(hoy);
+    .all(hoy, ...filtroAtrasados);
   res.json({
     hoy: deHoy.map((f) => ({ ...f, detenido: Number(f.detenido) === 1 })),
     atrasados: atrasados.map((f) => ({ ...f, detenido: Number(f.detenido) === 1 })),
@@ -230,6 +248,7 @@ router.get("/export", (req, res) => {
       params.push(`%${proceso}%`, `%${proceso}%`, `%${proceso}%`);
     }
   }
+  sql += sqlDependencia(req.query, params);
   sql += " ORDER BY fecha ASC, hora ASC";
   const datos = getDb().prepare(sql).all(...params);
   if (!datos.length) return res.status(404).json({ error: "No se encontraron agendamientos con esos parámetros." });
@@ -271,9 +290,19 @@ router.get("/", (req, res) => {
     sql += " AND usuario_carga = ?";
     params.push(resp);
   }
+  sql += sqlDependencia(req.query, params);
   sql += " ORDER BY hora ASC, id ASC";
   const filas = getDb().prepare(sql).all(...params).map(formatear);
   res.json({ fecha: isoFecha(fecha), total: filas.length, eventos: filas });
+});
+
+router.get("/expediente", exigir, async (req, res) => {
+  try {
+    const dependencia = await dependenciaHabilitada(req.query.sistema, req.query.codigo);
+    res.json(await datosExpediente({ numero: req.query.numero, dependencia }));
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.message || "No se pudo consultar el expediente." });
+  }
 });
 
 router.get("/:id/decreto", (req, res) => {
@@ -313,9 +342,15 @@ function validarCarga(body) {
   return { expediente, tipo, descripcion, anotacion, fecha, hora, detenido, habil };
 }
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const datos = validarCarga(req.body);
   if (datos.error) return res.status(400).json({ error: datos.error });
+  let dep;
+  try {
+    dep = await dependenciaHabilitada(req.body.sistema, req.body.codigo);
+  } catch (error) {
+    return res.status(error.status || 502).json({ error: error.message });
+  }
   if (!datos.habil.ok && !req.body.confirmarInhabil) {
     return res.status(409).json({
       code: "INHABIL",
@@ -328,9 +363,10 @@ router.post("/", (req, res) => {
     const colision = getDb()
       .prepare(
         `SELECT expediente, tipo FROM agenda
-         WHERE fecha = ? AND hora = ? AND estado = 'Pendiente' AND tipo IN (${placeholders})`
+         WHERE fecha = ? AND hora = ? AND estado = 'Pendiente' AND tipo IN (${placeholders})
+           AND sistema = ? AND dependencia_codigo = ?`
       )
-      .get(isoFecha(datos.fecha), datos.hora, ...TIPOS_AGENDA_BLOQUEANTES);
+      .get(isoFecha(datos.fecha), datos.hora, ...TIPOS_AGENDA_BLOQUEANTES, dep.sistema, dep.codigo);
     if (colision) {
       return res.status(409).json({
         code: "COLISION",
@@ -342,8 +378,9 @@ router.post("/", (req, res) => {
     const info = getDb()
       .prepare(
         `INSERT INTO agenda
-          (tipo, expediente, descripcion, anotacion, fecha, hora, detenido, estado, usuario_carga, fecha_carga)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente', ?, ?)`
+          (tipo, expediente, descripcion, anotacion, fecha, hora, detenido, estado, usuario_carga, fecha_carga,
+           sistema, dependencia_codigo, dependencia_nombre, circunscripcion)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente', ?, ?, ?, ?, ?, ?)`
       )
       .run(
         datos.tipo,
@@ -354,7 +391,11 @@ router.post("/", (req, res) => {
         datos.hora,
         datos.detenido,
         req.usuario,
-        ahoraStr()
+        ahoraStr(),
+        dep.sistema,
+        dep.codigo,
+        dep.nombre,
+        dep.circunscripcion || ""
       );
     const id = Number(info.lastInsertRowid);
     let detalle = `${datos.tipo} | ${datos.expediente} | ${isoFecha(datos.fecha)} ${datos.hora}`;
@@ -366,20 +407,27 @@ router.post("/", (req, res) => {
   res.json({ id: creado, fecha: isoFecha(datos.fecha) });
 });
 
-router.put("/:id", (req, res) => {
+router.put("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const actual = leerEvento(id);
   if (!actual) return res.status(404).json({ error: "Evento inexistente." });
   const datos = validarCarga(req.body);
   if (datos.error) return res.status(400).json({ error: datos.error });
+  let dep;
+  try {
+    dep = await dependenciaHabilitada(req.body.sistema, req.body.codigo);
+  } catch (error) {
+    return res.status(error.status || 502).json({ error: error.message });
+  }
   if (TIPOS_AGENDA_BLOQUEANTES.includes(datos.tipo)) {
     const placeholders = TIPOS_AGENDA_BLOQUEANTES.map(() => "?").join(",");
     const colision = getDb()
       .prepare(
         `SELECT expediente, tipo FROM agenda
-         WHERE id <> ? AND fecha = ? AND hora = ? AND estado = 'Pendiente' AND tipo IN (${placeholders})`
+         WHERE id <> ? AND fecha = ? AND hora = ? AND estado = 'Pendiente' AND tipo IN (${placeholders})
+           AND sistema = ? AND dependencia_codigo = ?`
       )
-      .get(id, isoFecha(datos.fecha), datos.hora, ...TIPOS_AGENDA_BLOQUEANTES);
+      .get(id, isoFecha(datos.fecha), datos.hora, ...TIPOS_AGENDA_BLOQUEANTES, dep.sistema, dep.codigo);
     if (colision) {
       return res.status(409).json({
         code: "COLISION",
@@ -391,7 +439,8 @@ router.put("/:id", (req, res) => {
     getDb()
       .prepare(
         `UPDATE agenda
-         SET tipo = ?, expediente = ?, descripcion = ?, anotacion = ?, fecha = ?, hora = ?, detenido = ?
+         SET tipo = ?, expediente = ?, descripcion = ?, anotacion = ?, fecha = ?, hora = ?, detenido = ?,
+             sistema = ?, dependencia_codigo = ?, dependencia_nombre = ?, circunscripcion = ?
          WHERE id = ?`
       )
       .run(
@@ -402,6 +451,10 @@ router.put("/:id", (req, res) => {
         isoFecha(datos.fecha),
         datos.hora,
         datos.detenido,
+        dep.sistema,
+        dep.codigo,
+        dep.nombre,
+        dep.circunscripcion || "",
         id
       );
     const cambios = [

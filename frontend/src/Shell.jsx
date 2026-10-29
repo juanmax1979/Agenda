@@ -9,48 +9,31 @@ const TABS = [
   { id: "admin", label: "Administración", admin: true },
 ];
 
-export default function Shell({ sesion, onLogout }) {
+export default function Shell({ sesion, dependencia, onDependencia, onCambiarDependencia }) {
   const [tab, setTab] = useState("agenda");
   const [catalogos, setCatalogos] = useState(null);
   const [error, setError] = useState("");
   const [avisos, setAvisos] = useState(null);
-  const [clave, setClave] = useState(false);
-  const [actual, setActual] = useState("");
-  const [nueva, setNueva] = useState("");
-  const [msgClave, setMsgClave] = useState("");
+  const fuentes = sesion;
+
+  useEffect(() => {
+    if (!dependencia) return;
+    const params = new URLSearchParams({
+      sistema: dependencia.sistema,
+      codigo: dependencia.codigo,
+    });
+    api(`/agenda/avisos?${params}`)
+      .then((data) => {
+        if (data.hoy.length || data.atrasados.length) setAvisos(data);
+      })
+      .catch(() => {});
+  }, [dependencia]);
 
   useEffect(() => {
     api("/agenda/catalogos")
       .then(setCatalogos)
       .catch((err) => setError(err.message));
-    api("/agenda/avisos")
-      .then((data) => {
-        if (data.hoy.length || data.atrasados.length) setAvisos(data);
-      })
-      .catch(() => {});
   }, []);
-
-  async function salir() {
-    try {
-      await api("/auth/logout", { method: "POST" });
-    } catch {
-      /* la sesión local se cierra igual */
-    }
-    onLogout();
-  }
-
-  async function guardarClave(e) {
-    e.preventDefault();
-    setMsgClave("");
-    try {
-      await api("/auth/password", { method: "POST", body: { actual, nueva } });
-      setClave(false);
-      setActual("");
-      setNueva("");
-    } catch (err) {
-      setMsgClave(err.message);
-    }
-  }
 
   return (
     <div className="app">
@@ -69,13 +52,41 @@ export default function Shell({ sesion, onLogout }) {
         <div className="topbar-user">
           <div>
             <strong>{sesion.usuario}</strong>
-            <span>{(sesion.rol || "").toUpperCase()}</span>
+            <span>{fuentes?.identidad?.login || ""}</span>
           </div>
-          <button type="button" className="btn btn-ghost" onClick={() => setClave(true)}>Contraseña</button>
-          <button type="button" className="btn btn-ghost" onClick={() => api("/agenda/avisos").then(setAvisos).catch((e) => setError(e.message))}>
+          {fuentes?.dependencias?.length > 0 && (
+            <label className="dep-box">
+              <span>Dependencia</span>
+              <select
+                value={dependencia ? `${dependencia.sistema}:${dependencia.codigo}` : ""}
+                onChange={(e) => {
+                  const siguiente = fuentes.dependencias.find(
+                    (dep) => `${dep.sistema}:${dep.codigo}` === e.target.value
+                  );
+                  if (siguiente) onDependencia(siguiente);
+                }}
+              >
+                {fuentes.dependencias.map((dep) => (
+                  <option key={`${dep.sistema}:${dep.codigo}`} value={`${dep.sistema}:${dep.codigo}`}>
+                    {dep.sistema} — {dep.nombre}{dep.titularidad ? ` (${dep.titularidad})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button type="button" className="btn btn-ghost" onClick={onCambiarDependencia}>
+            Cambiar dependencia
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => {
+            if (!dependencia) return;
+            const params = new URLSearchParams({
+              sistema: dependencia.sistema,
+              codigo: dependencia.codigo,
+            });
+            api(`/agenda/avisos?${params}`).then(setAvisos).catch((e) => setError(e.message));
+          }}>
             Avisos
           </button>
-          <button type="button" className="btn btn-ghost" onClick={salir}>Salir</button>
         </div>
       </header>
       <nav className="tabs">
@@ -94,7 +105,13 @@ export default function Shell({ sesion, onLogout }) {
         {error && <p className="banner-error">{error}</p>}
         {!catalogos && !error && <p className="muted">Cargando la agenda…</p>}
         {catalogos && tab === "agenda" && (
-          <Agenda catalogos={catalogos} rol={sesion.rol} usuario={sesion.usuario} />
+          <Agenda
+            catalogos={catalogos}
+            rol={sesion.rol}
+            usuario={sesion.usuario}
+            dependencia={dependencia}
+            fuentes={fuentes}
+          />
         )}
         {catalogos && tab === "admin" && sesion.rol === "admin" && <Admin />}
       </main>
@@ -102,16 +119,6 @@ export default function Shell({ sesion, onLogout }) {
       {avisos && (
         <Modal title="Agenda — Avisos" onClose={() => setAvisos(null)}>
           <Avisos datos={avisos} />
-        </Modal>
-      )}
-      {clave && (
-        <Modal title="Cambiar contraseña" onClose={() => setClave(false)}>
-          <form className="stack" onSubmit={guardarClave}>
-            <label>Contraseña actual<input type="password" value={actual} onChange={(e) => setActual(e.target.value)} required /></label>
-            <label>Nueva contraseña<input type="password" value={nueva} onChange={(e) => setNueva(e.target.value)} minLength={4} required /></label>
-            {msgClave && <p className="form-error">{msgClave}</p>}
-            <button className="btn btn-primary" type="submit">Guardar</button>
-          </form>
         </Modal>
       )}
     </div>

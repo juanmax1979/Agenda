@@ -103,7 +103,7 @@ function calcularPlazo({ fechaBase, dias, habiles, excluirInicial }) {
   };
 }
 
-function diasEnRango(desde, hasta) {
+function diasEnRango(desde, hasta, dependencia = {}) {
   const salida = {};
   let cursor = desde;
   const fin = isoFecha(hasta);
@@ -118,13 +118,21 @@ function diasEnRango(desde, hasta) {
     };
     cursor = addDays(cursor, 1);
   }
+  const sistema = String(dependencia.sistema || "").trim();
+  const codigo = String(dependencia.codigo || "").trim();
+  const params = [isoFecha(desde), isoFecha(hasta)];
+  let filtro = "";
+  if (sistema && codigo) {
+    filtro = " AND ((sistema = ? AND dependencia_codigo = ?) OR dependencia_codigo IS NULL OR dependencia_codigo = '')";
+    params.push(sistema, codigo);
+  }
   const marcas = getDb()
     .prepare(
       `SELECT fecha, COUNT(*) AS n FROM agenda
-       WHERE fecha >= ? AND fecha <= ?
+       WHERE fecha >= ? AND fecha <= ?${filtro}
        GROUP BY fecha`
     )
-    .all(isoFecha(desde), isoFecha(hasta));
+    .all(...params);
   for (const marca of marcas) {
     if (salida[marca.fecha]) salida[marca.fecha].eventos = marca.n;
   }

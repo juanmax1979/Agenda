@@ -31,7 +31,7 @@ export async function api(path, { method = "GET", body } = {}) {
       data = { error: text };
     }
   }
-  if (res.status === 401 && !path.startsWith("/auth/login")) {
+  if (res.status === 401 && path !== "/auth/entrada" && path !== "/auth/login") {
     window.dispatchEvent(new Event("sesion-vencida"));
   }
   if (!res.ok) {
