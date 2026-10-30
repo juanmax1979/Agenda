@@ -145,10 +145,48 @@ function initDb() {
   asegurarColumna("agenda", "dependencia_codigo", "TEXT DEFAULT ''");
   asegurarColumna("agenda", "dependencia_nombre", "TEXT DEFAULT ''");
   asegurarColumna("agenda", "circunscripcion", "TEXT DEFAULT ''");
+  asegurarColumna("agenda", "alcance", "TEXT DEFAULT 'dependencia'");
+  asegurarColumna("agenda", "fuero", "TEXT DEFAULT ''");
+  asegurarColumna("agenda", "codigo_tipo", "TEXT DEFAULT ''");
+  asegurarColumna("agenda", "clasificacion", "TEXT DEFAULT ''");
+  asegurarColumna("agenda", "responsable", "TEXT DEFAULT ''");
   db.exec(`
+    CREATE TABLE IF NOT EXISTS agenda_participantes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      agenda_id INTEGER NOT NULL,
+      sistema TEXT DEFAULT '',
+      codigo TEXT DEFAULT '',
+      nombre TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_part_agenda ON agenda_participantes(agenda_id);
+    CREATE INDEX IF NOT EXISTS idx_part_dep ON agenda_participantes(sistema, codigo);
+
+    CREATE TABLE IF NOT EXISTS tipos_plazo (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL UNIQUE,
+      dias INTEGER,
+      habiles INTEGER NOT NULL DEFAULT 1
+    );
+
     CREATE INDEX IF NOT EXISTS idx_agenda_dependencia_fecha
       ON agenda(sistema, dependencia_codigo, fecha)
   `);
+
+  const cantPlazos = db.prepare("SELECT COUNT(*) AS n FROM tipos_plazo").get().n;
+  if (cantPlazos === 0) {
+    const insertPlazo = db.prepare("INSERT INTO tipos_plazo (nombre, dias, habiles) VALUES (?, ?, ?)");
+    for (const [nombre, dias, habiles] of [
+      ["Traslado de demanda", null, 1],
+      ["Contestación de demanda", null, 1],
+      ["Caducidad de instancia", null, 0],
+      ["Vencimiento de llamado de autos para sentencia definitiva", null, 1],
+      ["Vencimiento de llamado de autos para sentencia interlocutoria", null, 1],
+      ["Vencimiento de contestación de oficios (organismos públicos)", null, 1],
+      ["Vencimiento de contestación de oficios (organismos privados)", null, 1],
+    ]) {
+      insertPlazo.run(nombre, dias, habiles);
+    }
+  }
 
   const cantFeriados = db.prepare(
     "SELECT COUNT(*) AS n FROM feriados WHERE tipo = 'PERMANENTE'"

@@ -1,4 +1,5 @@
 const { getDb } = require("./db");
+const { sqlVisibilidad } = require("./visibilidad");
 const {
   FERIADOS_FIJOS,
   FERIAS_INVIERNO,
@@ -121,11 +122,11 @@ function diasEnRango(desde, hasta, dependencia = {}) {
   const sistema = String(dependencia.sistema || "").trim();
   const codigo = String(dependencia.codigo || "").trim();
   const params = [isoFecha(desde), isoFecha(hasta)];
-  let filtro = "";
-  if (sistema && codigo) {
-    filtro = " AND ((sistema = ? AND dependencia_codigo = ?) OR dependencia_codigo IS NULL OR dependencia_codigo = '')";
-    params.push(sistema, codigo);
-  }
+  const filtro = sqlVisibilidad({
+    sistema,
+    codigo,
+    nombreDependencia: dependencia.nombre || "",
+  }, params);
   const marcas = getDb()
     .prepare(
       `SELECT fecha, COUNT(*) AS n FROM agenda

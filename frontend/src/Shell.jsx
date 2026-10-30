@@ -21,6 +21,7 @@ export default function Shell({ sesion, dependencia, onDependencia, onCambiarDep
     const params = new URLSearchParams({
       sistema: dependencia.sistema,
       codigo: dependencia.codigo,
+      nombreDependencia: dependencia.nombre || "",
     });
     api(`/agenda/avisos?${params}`)
       .then((data) => {
@@ -82,6 +83,7 @@ export default function Shell({ sesion, dependencia, onDependencia, onCambiarDep
             const params = new URLSearchParams({
               sistema: dependencia.sistema,
               codigo: dependencia.codigo,
+              nombreDependencia: dependencia.nombre || "",
             });
             api(`/agenda/avisos?${params}`).then(setAvisos).catch((e) => setError(e.message));
           }}>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, descargar } from "./api.js";
 import Modal from "./Modal.jsx";
+import Gestion from "./Gestion.jsx";
 
 const MESES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
@@ -43,13 +44,21 @@ function nombreDia(iso) {
 }
 
 const VACIO = {
+  clase: "audiencia",
+  alcance: "agente",
   tipo: "",
+  fuero: "",
+  codigoTipo: "",
+  clasificacion: "",
   expediente: "",
   fecha: "",
   hora: "09:00",
   descripcion: "",
   anotacion: "",
   detenido: false,
+  responsable: "",
+  participantes: [],
+  otraOficina: "",
 };
 
 export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }) {
@@ -59,12 +68,15 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
   const [eventos, setEventos] = useState([]);
   const [q, setQ] = useState("");
   const [responsable, setResponsable] = useState("Todos los miembros");
+  const [integrantes, setIntegrantes] = useState([]);
   const [pendientes, setPendientes] = useState(false);
   const [activo, setActivo] = useState(null);
   const [form, setForm] = useState(null);
   const [plazos, setPlazos] = useState(false);
   const [copiar, setCopiar] = useState(false);
   const [listado, setListado] = useState(false);
+  const [gestion, setGestion] = useState("");
+  const [catalogo, setCatalogo] = useState(null);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
@@ -72,6 +84,7 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
 
   const sistema = dependencia?.sistema || "";
   const codigo = dependencia?.codigo || "";
+  const nombreDependencia = dependencia?.nombre || "";
 
   const cargarCalendario = useCallback(async () => {
     if (!sistema || !codigo) {
@@ -81,10 +94,10 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
     const desde = visibles[0].inicio;
     const ultimo = parse(visibles[2].inicio);
     const hasta = isoDe(new Date(ultimo.getFullYear(), ultimo.getMonth() + 1, 0));
-    const params = new URLSearchParams({ desde, hasta, sistema, codigo });
+    const params = new URLSearchParams({ desde, hasta, sistema, codigo, nombreDependencia });
     const data = await api(`/agenda/calendario?${params}`);
     setDias(data.dias);
-  }, [visibles, sistema, codigo]);
+  }, [visibles, sistema, codigo, nombreDependencia]);
 
   const cargarDia = useCallback(async () => {
     if (!sistema || !codigo) {
@@ -98,11 +111,33 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
       pendientes: pendientes ? "1" : "0",
       sistema,
       codigo,
+      nombreDependencia,
     });
     const data = await api(`/agenda?${params}`);
     setEventos(data.eventos);
     setActivo((prev) => data.eventos.find((e) => e.id === prev?.id) || null);
-  }, [seleccionado, q, responsable, pendientes, sistema, codigo]);
+  }, [seleccionado, q, responsable, pendientes, sistema, codigo, nombreDependencia]);
+
+  useEffect(() => {
+    if (!sistema || !codigo) {
+      setIntegrantes([]);
+      return;
+    }
+    const params = new URLSearchParams({ sistema, codigo });
+    api(`/agenda/integrantes?${params}`)
+      .then((data) => setIntegrantes(data.integrantes || []))
+      .catch(() => setIntegrantes([]));
+  }, [sistema, codigo]);
+
+  useEffect(() => {
+    if (responsable !== "Todos los miembros" && !integrantes.includes(responsable)) {
+      setResponsable("Todos los miembros");
+    }
+  }, [integrantes, responsable]);
+
+  useEffect(() => {
+    api("/agenda/catalogo-audiencias").then(setCatalogo).catch(() => setCatalogo(null));
+  }, []);
 
   useEffect(() => {
     cargarCalendario().catch((err) => setError(err.message));
@@ -118,7 +153,8 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
   }
 
   function abrirNuevo(precarga = {}) {
-    setForm({ ...VACIO, fecha: seleccionado, ...precarga, id: null });
+    const fuero = catalogo?.fueros?.includes(dependencia?.fuero) ? dependencia.fuero : "";
+    setForm({ ...VACIO, fecha: seleccionado, fuero, responsable: usuario, ...precarga, id: null });
   }
 
   function abrirEdicion(ev = activo) {
@@ -130,13 +166,21 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
     setActivo(ev);
     setForm({
       id: ev.id,
+      clase: ev.clasificacion === "Licencia" ? "licencia" : ev.clasificacion === "Evento" ? "evento" : ev.tipo === "Vencimiento de Plazo" ? "plazo" : "audiencia",
+      alcance: ev.alcance || "agente",
       tipo: ev.tipo,
+      fuero: ev.fuero || "",
+      codigoTipo: ev.codigoTipo || "",
+      clasificacion: ev.clasificacion || "",
       expediente: ev.expediente,
       fecha: ev.fecha,
       hora: ev.hora || "09:00",
       descripcion: ev.descripcion,
       anotacion: ev.anotacion,
       detenido: ev.detenido,
+      responsable: ev.responsable || ev.usuario,
+      participantes: [],
+      otraOficina: ev.participantes || "",
     });
     setError("");
   }
@@ -159,6 +203,7 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
         pendientes: pendientes ? "1" : "0",
         sistema,
         codigo,
+        nombreDependencia,
       });
       const dia = await api(`/agenda?${params}`);
       setEventos(dia.eventos);
@@ -181,10 +226,16 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
       if (reprogramar && window.confirm(`El evento quedó como ${estado}.\n\n¿Desea fijar nueva fecha y hora ahora?`)) {
         abrirNuevo({
           tipo: activo.tipo,
+          codigoTipo: activo.codigoTipo,
+          fuero: activo.fuero,
+          clasificacion: activo.clasificacion,
+          clase: activo.clasificacion === "Licencia" ? "licencia" : activo.clasificacion === "Evento" ? "evento" : activo.tipo === "Vencimiento de Plazo" || activo.clasificacion === "Plazo" ? "plazo" : "audiencia",
+          alcance: activo.alcance || "agente",
           expediente: activo.expediente,
           descripcion: activo.descripcion,
           detenido: activo.detenido,
           anotacion: "",
+          responsable: activo.responsable,
         });
       }
     } catch (err) {
@@ -193,8 +244,13 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
   }
 
   async function borrar() {
-    if (rol !== "admin") return setError("Solo admins pueden borrar.");
     if (!activo) return setError("Seleccione un evento.");
+    const propio = [activo.usuario, activo.responsable].some(
+      (nombre) => String(nombre || "").trim().toLowerCase() === String(usuario || "").trim().toLowerCase()
+    );
+    if (rol !== "admin" && !propio) {
+      return setError("Solo quien cargó el evento, su responsable o el administrador general pueden borrarlo.");
+    }
     if (!window.confirm(`¿BORRAR DEFINITIVAMENTE este evento?\n\n${activo.tipo} — ${activo.expediente}\n${activo.fecha} ${activo.hora}\n\nPara preservar el historial conviene marcarlo Fracasada o Suspendida.`)) return;
     try {
       await api(`/agenda/${activo.id}`, { method: "DELETE" });
@@ -236,6 +292,9 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
         <button type="button" onClick={copiarDecreto}>Decreto</button>
         <button type="button" onClick={() => setPlazos(true)}>Sumar días</button>
         <button type="button" onClick={() => setListado(true)}>Listado</button>
+        <button type="button" onClick={() => setGestion("importar")}>Importar</button>
+        <button type="button" onClick={() => setGestion("estadisticas")}>Estadísticas</button>
+        <button type="button" onClick={() => setGestion("plazos")}>Plazos</button>
         <button type="button" onClick={() => { setSeleccionado(hoy()); setCentro(`${hoy().slice(0, 7)}-01`); }}>Hoy</button>
       </div>
       {error && <p className="banner-error">{error}</p>}
@@ -273,7 +332,7 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar en el día" />
           <select value={responsable} onChange={(e) => setResponsable(e.target.value)}>
             <option>Todos los miembros</option>
-            {catalogos.usuarios.map((u) => <option key={u}>{u}</option>)}
+            {integrantes.map((u) => <option key={u}>{u}</option>)}
           </select>
         </div>
       </div>
@@ -311,7 +370,17 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
 
       {form && (
         <Modal title={form.id ? "Modificar evento" : "Agregar audiencia"} onClose={() => setForm(null)}>
-          <FormEvento form={form} setForm={setForm} tipos={tipos} dependencia={dependencia} onSubmit={(datos) => guardarForm(false, datos)} />
+          <FormEvento
+            form={form}
+            setForm={setForm}
+            catalogo={catalogo}
+            integrantes={integrantes}
+            usuario={usuario}
+            rol={rol}
+            fuentes={fuentes}
+            dependencia={dependencia}
+            onSubmit={(datos) => guardarForm(false, datos)}
+          />
         </Modal>
       )}
       {copiar && (
@@ -324,13 +393,27 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
           <Plazos
             fecha={seleccionado}
             onIr={(iso) => { setSeleccionado(iso); setCentro(`${iso.slice(0, 7)}-01`); setPlazos(false); }}
-            onCrear={(datos) => { setPlazos(false); setSeleccionado(datos.fecha); abrirNuevo(datos); }}
+            onCrear={(datos) => { setPlazos(false); setSeleccionado(datos.fecha); abrirNuevo({ ...datos, clase: "plazo", alcance: "dependencia" }); }}
           />
         </Modal>
       )}
       {listado && (
         <Modal title="Listado de agendamientos" onClose={() => setListado(false)} wide>
-          <Listado usuarios={catalogos.usuarios} tipos={tipos} dependencia={dependencia} onClose={() => setListado(false)} onError={setError} />
+          <Listado usuarios={integrantes} tipos={tipos} catalogo={catalogo} dependencia={dependencia} onClose={() => setListado(false)} onError={setError} />
+        </Modal>
+      )}
+      {gestion && (
+        <Modal
+          title={gestion === "importar" ? "Importar agenda" : gestion === "estadisticas" ? "Estadísticas" : "Tipos de plazo"}
+          onClose={() => setGestion("")}
+          wide
+        >
+          <Gestion
+            modo={gestion}
+            dependencia={dependencia}
+            onClose={() => setGestion("")}
+            onImportado={() => refrescar().catch((err) => setError(err.message))}
+          />
         </Modal>
       )}
     </section>
@@ -372,10 +455,17 @@ function MiniMes({ anio, mes, dias, seleccionado, onSelect }) {
   );
 }
 
-function FormEvento({ form, setForm, tipos, dependencia, onSubmit }) {
+function FormEvento({ form, setForm, catalogo, integrantes, usuario, rol, fuentes, dependencia, onSubmit }) {
   const [aviso, setAviso] = useState("");
   const [causa, setCausa] = useState(null);
   const [buscando, setBuscando] = useState(false);
+  const [plazos, setPlazos] = useState([]);
+  const pideExpediente = form.clase === "audiencia" || form.clase === "plazo";
+  const tiposFuero = (catalogo?.audiencias || []).filter((item) => item.fuero === form.fuero);
+  const otras = (fuentes?.dependencias || []).filter(
+    (dep) => !(dep.sistema === dependencia?.sistema && dep.codigo === dependencia?.codigo)
+  );
+
   useEffect(() => {
     if (!form.fecha) return;
     api(`/agenda/dia?fecha=${form.fecha}`)
@@ -383,9 +473,46 @@ function FormEvento({ form, setForm, tipos, dependencia, onSubmit }) {
       .catch(() => setAviso(""));
   }, [form.fecha]);
 
+  useEffect(() => {
+    if (form.clase !== "plazo") return;
+    api("/agenda/plazos-tipos").then(setPlazos).catch(() => setPlazos([]));
+  }, [form.clase]);
+
+  function cambiarClase(clase) {
+    setForm({
+      ...form,
+      clase,
+      tipo: clase === "licencia" ? "Licencia" : "",
+      codigoTipo: "",
+      clasificacion: "",
+      hora: clase === "audiencia" ? (form.hora || "09:00") : "",
+      alcance: clase === "audiencia" && form.alcance === "general" ? form.alcance : form.alcance,
+    });
+  }
+
+  function elegirTipo(codigo) {
+    const item = tiposFuero.find((t) => t.codigo === codigo);
+    setForm({
+      ...form,
+      codigoTipo: codigo,
+      tipo: item?.tipo || "",
+      clasificacion: item?.clasificacion || "",
+      fuero: item?.fuero || form.fuero,
+      descripcion: form.descripcion.trim() ? form.descripcion : (item?.descripcion || ""),
+    });
+  }
+
+  function toggleOficina(dep) {
+    const ya = form.participantes.some((p) => p.sistema === dep.sistema && p.codigo === dep.codigo);
+    const participantes = ya
+      ? form.participantes.filter((p) => !(p.sistema === dep.sistema && p.codigo === dep.codigo))
+      : [...form.participantes, { sistema: dep.sistema, codigo: dep.codigo, nombre: dep.nombre }];
+    setForm({ ...form, participantes });
+  }
+
   async function buscarCausa() {
     const numero = form.expediente.trim();
-    if (!numero || !dependencia) return;
+    if (!numero || !dependencia) return null;
     setBuscando(true);
     setCausa(null);
     try {
@@ -412,28 +539,98 @@ function FormEvento({ form, setForm, tipos, dependencia, onSubmit }) {
 
   async function enviar(event) {
     event.preventDefault();
-    const data = await buscarCausa();
+    const data = form.expediente.trim() ? await buscarCausa() : null;
     const descripcion = form.descripcion.trim() || (data?.encontrado ? data.caratula : "");
-    onSubmit({ ...form, descripcion });
+    const responsable = form.alcance === "agente" ? usuario : (form.responsable || usuario);
+    onSubmit({ ...form, descripcion, responsable });
   }
 
   return (
     <form className="stack" onSubmit={enviar}>
-      <label>Tipo
-        <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} required>
-          <option value="">Seleccionar…</option>
-          {tipos.map((t) => <option key={t}>{t}</option>)}
-          {form.tipo && !tipos.includes(form.tipo) && <option>{form.tipo}</option>}
+      <label>Qué se carga
+        <select value={form.clase} onChange={(e) => cambiarClase(e.target.value)}>
+          <option value="audiencia">Audiencia</option>
+          <option value="licencia">Licencia</option>
+          <option value="evento">Evento</option>
+          <option value="plazo">Plazo legal</option>
         </select>
       </label>
-      <label>Expediente
-        <input
-          value={form.expediente}
-          onChange={(e) => setForm({ ...form, expediente: e.target.value })}
-          onBlur={buscarCausa}
-          required
-        />
+      <label>Agenda
+        <select
+          value={form.alcance}
+          onChange={(e) => setForm({ ...form, alcance: e.target.value, responsable: e.target.value === "agente" ? usuario : form.responsable })}
+        >
+          <option value="agente">Del agente (soy responsable)</option>
+          <option value="dependencia">De la dependencia</option>
+          {rol === "admin" && <option value="general">General del Poder Judicial</option>}
+        </select>
       </label>
+      {form.clase === "audiencia" && (
+        <>
+          <label>Fuero
+            <select value={form.fuero} onChange={(e) => setForm({ ...form, fuero: e.target.value, tipo: "", codigoTipo: "" })} required>
+              <option value="">Seleccionar…</option>
+              {(catalogo?.fueros || []).map((fuero) => <option key={fuero}>{fuero}</option>)}
+            </select>
+          </label>
+          <label>Tipo de audiencia
+            <select value={form.codigoTipo} onChange={(e) => elegirTipo(e.target.value)} required>
+              <option value="">Seleccionar…</option>
+              {tiposFuero.map((item) => (
+                <option key={item.codigo} value={item.codigo}>{item.codigo} — {item.tipo}</option>
+              ))}
+            </select>
+          </label>
+        </>
+      )}
+      {form.clase === "plazo" && (
+        <label>Tipo de plazo
+          <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value, codigoTipo: "" })} required>
+            <option value="">Seleccionar…</option>
+            {plazos.map((plazo) => (
+              <option key={plazo.id} value={plazo.nombre}>
+                {plazo.nombre}{plazo.dias ? ` (${plazo.dias} ${plazo.habiles ? "hábiles" : "corridos"})` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {(form.clase === "evento" || form.clase === "licencia") && (
+        <label>{form.clase === "licencia" ? "Licencia" : "Tipo de evento"}
+          <input
+            value={form.tipo}
+            onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+            placeholder={form.clase === "licencia" ? "Licencia" : "Feriado extraordinario, reunión, otro"}
+            required
+          />
+        </label>
+      )}
+      {form.alcance !== "agente" && (
+        <label>Responsable
+          <select value={form.responsable || usuario} onChange={(e) => setForm({ ...form, responsable: e.target.value })}>
+            {[...new Set([usuario, ...integrantes])].map((nombre) => <option key={nombre}>{nombre}</option>)}
+          </select>
+        </label>
+      )}
+      {pideExpediente && (
+        <label>Expediente
+          <input
+            value={form.expediente}
+            onChange={(e) => setForm({ ...form, expediente: e.target.value })}
+            onBlur={buscarCausa}
+            required
+          />
+        </label>
+      )}
+      {!pideExpediente && (
+        <label>Expediente (opcional)
+          <input
+            value={form.expediente}
+            onChange={(e) => setForm({ ...form, expediente: e.target.value })}
+            onBlur={buscarCausa}
+          />
+        </label>
+      )}
       {buscando && <p className="muted">Buscando la causa…</p>}
       {causa?.error && <p className="form-error">{causa.error}</p>}
       {causa?.encontrado && (
@@ -449,14 +646,43 @@ function FormEvento({ form, setForm, tipos, dependencia, onSubmit }) {
       )}
       <div className="split">
         <label>Fecha<input type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} required /></label>
-        <label>Hora<input value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} placeholder="09:00" /></label>
+        <label>Hora
+          <input value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} placeholder="09:00" required={form.clase === "audiencia"} />
+        </label>
       </div>
-      <label>Descripción<textarea rows={3} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} /></label>
-      <label>Anotación<input value={form.anotacion} onChange={(e) => setForm({ ...form, anotacion: e.target.value })} /></label>
-      <label className="check">
-        <input type="checkbox" checked={form.detenido} onChange={(e) => setForm({ ...form, detenido: e.target.checked })} />
-        Causa con detenido
+      <label>{form.clase === "licencia" || form.clase === "evento" ? "Nombre / detalle" : "Descripción"}
+        <textarea rows={3} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
       </label>
+      <label>Anotación<input value={form.anotacion} onChange={(e) => setForm({ ...form, anotacion: e.target.value })} /></label>
+      {form.clase === "audiencia" && (
+        <>
+          <fieldset>
+            <legend>Oficinas que participan</legend>
+            {otras.length === 0 && <p className="muted">No hay otras dependencias habilitadas para este usuario. Puede indicar el nombre.</p>}
+            {otras.map((dep) => (
+              <label className="check" key={`${dep.sistema}-${dep.codigo}`}>
+                <input
+                  type="checkbox"
+                  checked={form.participantes.some((p) => p.sistema === dep.sistema && p.codigo === dep.codigo)}
+                  onChange={() => toggleOficina(dep)}
+                />
+                {dep.sistema} — {dep.nombre}
+              </label>
+            ))}
+            <label>Otra oficina
+              <input
+                value={form.otraOficina}
+                onChange={(e) => setForm({ ...form, otraOficina: e.target.value })}
+                placeholder="Defensoría 6, Fiscalía 1"
+              />
+            </label>
+          </fieldset>
+          <label className="check">
+            <input type="checkbox" checked={form.detenido} onChange={(e) => setForm({ ...form, detenido: e.target.checked })} />
+            Causa con detenido
+          </label>
+        </>
+      )}
       {aviso && <p className={aviso.startsWith("✓") ? "ok-text" : "inhabil"}>{aviso}</p>}
       <button className="btn btn-primary" type="submit">Aceptar</button>
     </form>
@@ -540,7 +766,7 @@ function Plazos({ fecha, onIr, onCrear }) {
   );
 }
 
-function Listado({ usuarios, tipos, dependencia, onClose, onError }) {
+function Listado({ usuarios, tipos, catalogo, dependencia, onClose, onError }) {
   const [responsable, setResponsable] = useState("Todos");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
@@ -549,10 +775,11 @@ function Listado({ usuarios, tipos, dependencia, onClose, onError }) {
   const [vencimiento, setVencimiento] = useState(true);
   const [estado, setEstado] = useState("Todo");
   const [proceso, setProceso] = useState("Todos");
+  const [filas, setFilas] = useState(null);
+  const tiposCatalogo = [...new Set([...(catalogo?.audiencias || []).map((item) => item.tipo), ...tipos])];
 
-  async function exportar(e) {
-    e.preventDefault();
-    const params = new URLSearchParams({
+  function params() {
+    const query = new URLSearchParams({
       responsable,
       estado,
       proceso,
@@ -560,51 +787,97 @@ function Listado({ usuarios, tipos, dependencia, onClose, onError }) {
       audiencia: audiencia ? "1" : "0",
       vencimiento: vencimiento ? "1" : "0",
     });
-    if (desde) params.set("desde", desde);
-    if (hasta) params.set("hasta", hasta);
+    if (desde) query.set("desde", desde);
+    if (hasta) query.set("hasta", hasta);
     if (dependencia) {
-      params.set("sistema", dependencia.sistema);
-      params.set("codigo", dependencia.codigo);
+      query.set("sistema", dependencia.sistema);
+      query.set("codigo", dependencia.codigo);
+      query.set("nombreDependencia", dependencia.nombre || "");
     }
+    return query;
+  }
+
+  async function exportar(e) {
+    e.preventDefault();
     try {
-      await descargar(`/agenda/export?${params}`, "agendamientos.csv");
+      await descargar(`/agenda/export?${params()}`, "agendamientos.csv");
       onClose();
     } catch (err) {
       onError(err.message);
-      onClose();
+    }
+  }
+
+  async function imprimir() {
+    try {
+      const data = await api(`/agenda/listado?${params()}`);
+      setFilas(data.filas || []);
+      setTimeout(() => window.print(), 300);
+    } catch (err) {
+      onError(err.message);
     }
   }
 
   return (
-    <form className="stack" onSubmit={exportar}>
-      <label>Responsable
-        <select value={responsable} onChange={(e) => setResponsable(e.target.value)}>
-          <option>Todos</option>
-          {usuarios.map((u) => <option key={u}>{u}</option>)}
-        </select>
-      </label>
-      <div className="split">
-        <label>Desde<input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></label>
-        <label>Hasta<input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></label>
-      </div>
-      <fieldset>
-        <legend>Tipo</legend>
-        <label className="check"><input type="checkbox" checked={tarea} onChange={(e) => setTarea(e.target.checked)} /> Tarea</label>
-        <label className="check"><input type="checkbox" checked={audiencia} onChange={(e) => setAudiencia(e.target.checked)} /> Audiencia</label>
-        <label className="check"><input type="checkbox" checked={vencimiento} onChange={(e) => setVencimiento(e.target.checked)} /> Vencimiento</label>
-      </fieldset>
-      <label>Estado
-        <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-          {["Todo", "Pendiente", "Realizada", "Fracasada", "Suspendida"].map((e) => <option key={e}>{e}</option>)}
-        </select>
-      </label>
-      <label>Proceso
-        <select value={proceso} onChange={(e) => setProceso(e.target.value)}>
-          <option>Todos</option>
-          {tipos.map((t) => <option key={t}>{t}</option>)}
-        </select>
-      </label>
-      <button className="btn btn-primary" type="submit">Exportar</button>
-    </form>
+    <>
+      <form className="stack" onSubmit={exportar}>
+        <label>Responsable
+          <select value={responsable} onChange={(e) => setResponsable(e.target.value)}>
+            <option>Todos</option>
+            {usuarios.map((u) => <option key={u}>{u}</option>)}
+          </select>
+        </label>
+        <div className="split">
+          <label>Desde<input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></label>
+          <label>Hasta<input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></label>
+        </div>
+        <fieldset>
+          <legend>Tipo</legend>
+          <label className="check"><input type="checkbox" checked={tarea} onChange={(e) => setTarea(e.target.checked)} /> Eventos y licencias</label>
+          <label className="check"><input type="checkbox" checked={audiencia} onChange={(e) => setAudiencia(e.target.checked)} /> Audiencias</label>
+          <label className="check"><input type="checkbox" checked={vencimiento} onChange={(e) => setVencimiento(e.target.checked)} /> Plazos</label>
+        </fieldset>
+        <label>Estado
+          <select value={estado} onChange={(e) => setEstado(e.target.value)}>
+            {["Todo", "Pendiente", "Realizada", "Fracasada", "Suspendida"].map((e) => <option key={e}>{e}</option>)}
+          </select>
+        </label>
+        <label>Tipo puntual
+          <select value={proceso} onChange={(e) => setProceso(e.target.value)}>
+            <option>Todos</option>
+            {tiposCatalogo.map((t) => <option key={t}>{t}</option>)}
+          </select>
+        </label>
+        <div className="form-actions">
+          <button className="btn btn-primary" type="submit">Exportar CSV</button>
+          <button className="btn btn-secondary" type="button" onClick={imprimir}>Imprimir / PDF</button>
+        </div>
+      </form>
+      {filas && (
+        <div className="print-sheet">
+          <h2>Listado de agenda{dependencia ? ` — ${dependencia.nombre}` : ""}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Hora</th><th>Responsable</th><th>Tipo</th><th>Expediente</th><th>Descripción</th><th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map((fila, i) => (
+                <tr key={`${fila.fecha}-${i}`}>
+                  <td>{String(fila.fecha || "").split("-").reverse().join("/")}</td>
+                  <td>{fila.hora}</td>
+                  <td>{fila.responsable || fila.usuario_carga}</td>
+                  <td>{fila.tipo}</td>
+                  <td>{fila.expediente}</td>
+                  <td>{fila.descripcion}</td>
+                  <td>{fila.estado}</td>
+                </tr>
+              ))}
+              {filas.length === 0 && <tr><td colSpan={7}>Sin resultados.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
   );
 }

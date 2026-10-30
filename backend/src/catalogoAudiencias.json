@@ -1,0 +1,802 @@
+{
+  "actualizado": "2026-10-30",
+  "fueros": [
+    "Civil y Comercial",
+    "Penal",
+    "Penal – Juicio por Jurados",
+    "Laboral",
+    "Niñez, Adolescencia y Familia",
+    "Violencia Familiar y de Género",
+    "Penal Juvenil",
+    "Ejecución Penal",
+    "Contencioso Administrativo",
+    "Justicia de Paz y Faltas",
+    "Instancias Superiores",
+    "Mediación"
+  ],
+  "audiencias": [
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia preliminar",
+      "descripcion": "Intenta la conciliación, fija los hechos controvertidos y organiza la actividad probatoria.",
+      "dependenciaHabitual": "Juzgados Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CIV-01"
+    },
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia de vista de causa",
+      "descripcion": "Concentra la producción de prueba y demás actos orales que el tribunal disponga.",
+      "dependenciaHabitual": "Juzgados Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CIV-02"
+    },
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia de conciliación",
+      "descripcion": "Procura que las partes alcancen un acuerdo total o parcial sobre cuestiones disponibles.",
+      "dependenciaHabitual": "Juzgados Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CIV-03"
+    },
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia testimonial",
+      "descripcion": "Recibe declaraciones de testigos sobre los hechos relevantes del proceso.",
+      "dependenciaHabitual": "Juzgados Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CIV-04"
+    },
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia de declaración de parte",
+      "descripcion": "Recibe declaraciones de las partes en los supuestos admitidos por el procedimiento.",
+      "dependenciaHabitual": "Juzgados Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CIV-05"
+    },
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia de explicaciones periciales",
+      "descripcion": "Permite que los peritos aclaren, amplíen o expliquen sus dictámenes.",
+      "dependenciaHabitual": "Juzgados Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CIV-06"
+    },
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia de reconocimiento",
+      "descripcion": "Se utiliza para reconocer documentos, objetos u otros elementos cuando corresponda.",
+      "dependenciaHabitual": "Juzgados Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CIV-07"
+    },
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia por incidentes",
+      "descripcion": "Trata oralmente cuestiones incidentales cuando el órgano judicial lo dispone.",
+      "dependenciaHabitual": "Juzgados Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CIV-08"
+    },
+    {
+      "fuero": "Civil y Comercial",
+      "tipo": "Audiencia en segunda instancia",
+      "descripcion": "Recibe prueba o intervenciones orales excepcionalmente admitidas durante la apelación.",
+      "dependenciaHabitual": "Cámaras Civiles y Comerciales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Procedencia según el recurso y la normativa aplicable.",
+      "codigo": "CIV-09"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Declaración de imputado",
+      "descripcion": "Recibe la declaración de la persona imputada con las garantías y asistencia de defensa aplicables.",
+      "dependenciaHabitual": "Fiscalías de Investigación Penal",
+      "clasificacion": "Diligencia procesal",
+      "observaciones": "No equivale necesariamente a una audiencia jurisdiccional.",
+      "codigo": "PEN-01"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Declaración testimonial",
+      "descripcion": "Registra el testimonio de personas convocadas en la investigación o en el juicio.",
+      "dependenciaHabitual": "Fiscalías de Investigación Penal / Tribunales",
+      "clasificacion": "Diligencia procesal",
+      "observaciones": "En juicio integra la audiencia de debate.",
+      "codigo": "PEN-02"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de medidas de coerción",
+      "descripcion": "Trata la procedencia, mantenimiento o revisión de medidas de coerción personal cuando se dispone la instancia oral.",
+      "dependenciaHabitual": "Juzgados de Garantías",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-03"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de suspensión del juicio a prueba",
+      "descripcion": "Examina los requisitos y condiciones de una eventual suspensión del juicio a prueba.",
+      "dependenciaHabitual": "Juzgados de Garantías / Tribunales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-04"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de juicio abreviado",
+      "descripcion": "Controla la procedencia y legalidad del acuerdo de juicio abreviado.",
+      "dependenciaHabitual": "Juzgados / Tribunales penales competentes",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-05"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de debate oral",
+      "descripcion": "Desarrolla el juicio oral con intervención de las partes, producción de prueba y alegatos.",
+      "dependenciaHabitual": "Juzgados Correccionales / Cámaras en lo Criminal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-06"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de recepción de pruebas",
+      "descripcion": "Recibe declaraciones, pericias y otros medios de prueba ordenados en una instancia oral.",
+      "dependenciaHabitual": "Tribunales de juicio",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-07"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de testigos y peritos",
+      "descripcion": "Recibe testimonios y explicaciones técnicas durante el juicio.",
+      "dependenciaHabitual": "Tribunales de juicio",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Habitualmente forma parte del debate oral.",
+      "codigo": "PEN-08"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de conciliación y retractación",
+      "descripcion": "Trata la conciliación o retractación en procesos por delitos de acción privada cuando procede.",
+      "dependenciaHabitual": "Juzgados Correccionales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-09"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de informe oral de apelación",
+      "descripcion": "Escucha los fundamentos orales de las partes durante el tratamiento del recurso, cuando corresponda.",
+      "dependenciaHabitual": "Cámaras de Apelaciones Criminales y Correccionales",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-10"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de lectura de sentencia",
+      "descripcion": "Comunica el pronunciamiento o su parte resolutiva según las reglas del proceso.",
+      "dependenciaHabitual": "Tribunales de juicio",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-11"
+    },
+    {
+      "fuero": "Penal",
+      "tipo": "Audiencia de continuación del debate",
+      "descripcion": "Reanuda un juicio oral iniciado en una sesión anterior.",
+      "dependenciaHabitual": "Tribunales de juicio",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PEN-12"
+    },
+    {
+      "fuero": "Penal – Juicio por Jurados",
+      "tipo": "Audiencia preliminar preparatoria",
+      "descripcion": "Resuelve cuestiones previas al juicio y organiza la prueba que podrá presentarse al jurado.",
+      "dependenciaHabitual": "Jueces técnicos / Cámaras en lo Criminal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "JUR-01"
+    },
+    {
+      "fuero": "Penal – Juicio por Jurados",
+      "tipo": "Audiencia de selección de jurados (voir dire)",
+      "descripcion": "Selecciona a las personas integrantes del jurado mediante el procedimiento previsto por la ley.",
+      "dependenciaHabitual": "Jueces técnicos / Cámaras en lo Criminal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "JUR-02"
+    },
+    {
+      "fuero": "Penal – Juicio por Jurados",
+      "tipo": "Audiencia de debate ante jurados",
+      "descripcion": "Celebra el juicio oral y público ante el jurado popular.",
+      "dependenciaHabitual": "Jueces técnicos / Cámaras en lo Criminal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "JUR-03"
+    },
+    {
+      "fuero": "Penal – Juicio por Jurados",
+      "tipo": "Audiencia de continuación del debate",
+      "descripcion": "Retoma las sesiones del juicio por jurados hasta su finalización.",
+      "dependenciaHabitual": "Jueces técnicos / Cámaras en lo Criminal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "JUR-04"
+    },
+    {
+      "fuero": "Penal – Juicio por Jurados",
+      "tipo": "Audiencia de cesura",
+      "descripcion": "Determina la pena o las consecuencias jurídicas una vez establecido un veredicto de culpabilidad.",
+      "dependenciaHabitual": "Jueces técnicos / Cámaras en lo Criminal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "JUR-05"
+    },
+    {
+      "fuero": "Penal – Juicio por Jurados",
+      "tipo": "Audiencia sobre cuestiones incidentales",
+      "descripcion": "Aborda planteos surgidos antes o durante el juicio que requieren decisión del juez técnico.",
+      "dependenciaHabitual": "Jueces técnicos / Cámaras en lo Criminal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "JUR-06"
+    },
+    {
+      "fuero": "Laboral",
+      "tipo": "Audiencia preliminar o de trámite",
+      "descripcion": "Organiza el proceso y habilita una tentativa conciliatoria o medidas probatorias.",
+      "dependenciaHabitual": "Juzgados del Trabajo / Cámaras del Trabajo",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "LAB-01"
+    },
+    {
+      "fuero": "Laboral",
+      "tipo": "Audiencia de conciliación",
+      "descripcion": "Procura un acuerdo entre trabajador y empleador sobre cuestiones legalmente conciliables.",
+      "dependenciaHabitual": "Juzgados del Trabajo / Cámaras del Trabajo",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "LAB-02"
+    },
+    {
+      "fuero": "Laboral",
+      "tipo": "Audiencia de declaración de parte",
+      "descripcion": "Recibe declaraciones de las partes en el marco de la prueba admitida.",
+      "dependenciaHabitual": "Juzgados del Trabajo / Cámaras del Trabajo",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "LAB-03"
+    },
+    {
+      "fuero": "Laboral",
+      "tipo": "Audiencia testimonial",
+      "descripcion": "Recibe declaraciones de testigos sobre hechos vinculados con la relación laboral.",
+      "dependenciaHabitual": "Juzgados del Trabajo / Cámaras del Trabajo",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "LAB-04"
+    },
+    {
+      "fuero": "Laboral",
+      "tipo": "Audiencia de explicaciones periciales",
+      "descripcion": "Permite aclaraciones de peritos médicos, contables u otras especialidades.",
+      "dependenciaHabitual": "Juzgados del Trabajo / Cámaras del Trabajo",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "LAB-05"
+    },
+    {
+      "fuero": "Laboral",
+      "tipo": "Audiencia supletoria testimonial",
+      "descripcion": "Recibe testimonios pendientes cuando se fija una fecha complementaria.",
+      "dependenciaHabitual": "Juzgados del Trabajo / Cámaras del Trabajo",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "LAB-06"
+    },
+    {
+      "fuero": "Laboral",
+      "tipo": "Audiencia de nuevas tratativas conciliatorias",
+      "descripcion": "Renueva la posibilidad de acuerdo durante la tramitación del proceso.",
+      "dependenciaHabitual": "Juzgados del Trabajo / Cámaras del Trabajo",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "LAB-07"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia preliminar",
+      "descripcion": "Organiza el proceso de familia, identifica controversias y ordena las medidas pertinentes.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "FAM-01"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de vista de causa",
+      "descripcion": "Concentra la producción de prueba y la intervención oral de las partes.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "FAM-02"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de escucha de niñas, niños y adolescentes",
+      "descripcion": "Garantiza el derecho de niñas, niños y adolescentes a ser oídos en condiciones adecuadas.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "FAM-03"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de alimentos",
+      "descripcion": "Trata pretensiones relativas a fijación, modificación o cumplimiento de obligaciones alimentarias.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Categoría temática; la modalidad concreta depende del procedimiento.",
+      "codigo": "FAM-04"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de cuidado personal",
+      "descripcion": "Aborda controversias sobre la organización del cuidado de hijos e hijas.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Categoría temática.",
+      "codigo": "FAM-05"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de régimen de comunicación",
+      "descripcion": "Trata solicitudes de fijación, adecuación o cumplimiento del régimen de comunicación.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Categoría temática.",
+      "codigo": "FAM-06"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de responsabilidad parental",
+      "descripcion": "Examina cuestiones relativas al ejercicio, suspensión o privación de responsabilidad parental.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Categoría temática.",
+      "codigo": "FAM-07"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia en proceso de adopción",
+      "descripcion": "Realiza las comparecencias personales previstas para los procesos de adopción.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Respetar reglas de reserva y escucha especializada.",
+      "codigo": "FAM-08"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de tutela o guarda",
+      "descripcion": "Trata medidas relativas al cuidado y representación de personas menores de edad.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Categoría temática.",
+      "codigo": "FAM-09"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de conciliación familiar",
+      "descripcion": "Busca acuerdos sobre asuntos disponibles, observando los límites legales aplicables.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "FAM-10"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de protección de derechos",
+      "descripcion": "Trata medidas de protección y garantía de derechos de niñas, niños y adolescentes.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Se prioriza el interés superior del niño.",
+      "codigo": "FAM-11"
+    },
+    {
+      "fuero": "Niñez, Adolescencia y Familia",
+      "tipo": "Audiencia de restitución internacional",
+      "descripcion": "Desarrolla las comparecencias previstas para controversias de restitución internacional de menores.",
+      "dependenciaHabitual": "Juzgados de Niñez, Adolescencia y Familia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "Depende del procedimiento especial.",
+      "codigo": "FAM-12"
+    },
+    {
+      "fuero": "Violencia Familiar y de Género",
+      "tipo": "Audiencia de escucha de la persona denunciante",
+      "descripcion": "Escucha a la persona denunciante procurando evitar revictimización y adoptar medidas de protección.",
+      "dependenciaHabitual": "Juzgados con competencia en violencia familiar y de género",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "VIO-01"
+    },
+    {
+      "fuero": "Violencia Familiar y de Género",
+      "tipo": "Audiencia sobre medidas de protección",
+      "descripcion": "Trata la necesidad, alcance o adecuación de medidas preventivas.",
+      "dependenciaHabitual": "Juzgados con competencia en violencia familiar y de género",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "VIO-02"
+    },
+    {
+      "fuero": "Violencia Familiar y de Género",
+      "tipo": "Audiencia de revisión de medidas de protección",
+      "descripcion": "Evalúa el mantenimiento, modificación o cese de medidas vigentes.",
+      "dependenciaHabitual": "Juzgados con competencia en violencia familiar y de género",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "VIO-03"
+    },
+    {
+      "fuero": "Violencia Familiar y de Género",
+      "tipo": "Audiencia de seguimiento",
+      "descripcion": "Examina el cumplimiento y los resultados de medidas adoptadas cuando se dispone.",
+      "dependenciaHabitual": "Juzgados con competencia en violencia familiar y de género",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "VIO-04"
+    },
+    {
+      "fuero": "Violencia Familiar y de Género",
+      "tipo": "Audiencia de escucha de NNyA",
+      "descripcion": "Recibe la opinión o relato de menores involucrados por medios adecuados y especializados.",
+      "dependenciaHabitual": "Juzgados con competencia en violencia familiar y de género",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "VIO-05"
+    },
+    {
+      "fuero": "Penal Juvenil",
+      "tipo": "Audiencia de medidas cautelares",
+      "descripcion": "Examina la necesidad y proporcionalidad de medidas restrictivas o de resguardo respecto del adolescente.",
+      "dependenciaHabitual": "Órganos con competencia penal juvenil",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PJV-01"
+    },
+    {
+      "fuero": "Penal Juvenil",
+      "tipo": "Audiencia de revisión de medidas",
+      "descripcion": "Controla y revisa las medidas aplicadas durante el procedimiento.",
+      "dependenciaHabitual": "Órganos con competencia penal juvenil",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PJV-02"
+    },
+    {
+      "fuero": "Penal Juvenil",
+      "tipo": "Audiencia de procedimiento abreviado",
+      "descripcion": "Controla la procedencia de un procedimiento abreviado si la normativa vigente lo admite.",
+      "dependenciaHabitual": "Órganos con competencia penal juvenil",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PJV-03"
+    },
+    {
+      "fuero": "Penal Juvenil",
+      "tipo": "Audiencia de debate penal juvenil",
+      "descripcion": "Celebra el juicio oral con garantías reforzadas y reglas de especialidad.",
+      "dependenciaHabitual": "Órganos con competencia penal juvenil",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PJV-04"
+    },
+    {
+      "fuero": "Penal Juvenil",
+      "tipo": "Audiencia de imposición de sanción",
+      "descripcion": "Trata la respuesta penal o medida aplicable cuando legalmente corresponde.",
+      "dependenciaHabitual": "Órganos con competencia penal juvenil",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PJV-05"
+    },
+    {
+      "fuero": "Penal Juvenil",
+      "tipo": "Audiencia de seguimiento de medidas socioeducativas",
+      "descripcion": "Controla el cumplimiento y evolución de medidas socioeducativas dispuestas.",
+      "dependenciaHabitual": "Órganos con competencia penal juvenil",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PJV-06"
+    },
+    {
+      "fuero": "Penal Juvenil",
+      "tipo": "Audiencia de revisión de medidas socioeducativas",
+      "descripcion": "Evalúa la continuidad, adecuación o finalización de medidas socioeducativas.",
+      "dependenciaHabitual": "Órganos con competencia penal juvenil",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PJV-07"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia de libertad condicional",
+      "descripcion": "Analiza la procedencia de la libertad condicional y sus condiciones.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-01"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia de libertad asistida",
+      "descripcion": "Trata el acceso y las condiciones del régimen de libertad asistida.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-02"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia de salidas transitorias",
+      "descripcion": "Evalúa el otorgamiento o modificación de permisos de salida.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-03"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia de semilibertad",
+      "descripcion": "Examina el acceso o la continuidad del régimen de semilibertad.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-04"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia de revocación de beneficios",
+      "descripcion": "Revisa presuntos incumplimientos y la posible revocación de beneficios.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-05"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia sobre condiciones de detención",
+      "descripcion": "Trata planteos relativos al alojamiento y las condiciones de privación de libertad.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-06"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia de sanciones disciplinarias",
+      "descripcion": "Permite controlar judicialmente medidas disciplinarias penitenciarias.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-07"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia de medidas de seguridad",
+      "descripcion": "Examina la imposición, mantenimiento o revisión de medidas de seguridad.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-08"
+    },
+    {
+      "fuero": "Ejecución Penal",
+      "tipo": "Audiencia por incidentes de ejecución",
+      "descripcion": "Resuelve controversias surgidas durante el cumplimiento de una condena.",
+      "dependenciaHabitual": "Juzgados de Ejecución Penal",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "EJP-09"
+    },
+    {
+      "fuero": "Contencioso Administrativo",
+      "tipo": "Audiencia testimonial",
+      "descripcion": "Recibe declaraciones de testigos sobre hechos controvertidos en procesos administrativos.",
+      "dependenciaHabitual": "Cámara en lo Contencioso Administrativo / Órganos competentes",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CAD-01"
+    },
+    {
+      "fuero": "Contencioso Administrativo",
+      "tipo": "Audiencia de declaración de parte",
+      "descripcion": "Recibe declaraciones de litigantes en los casos procesalmente admisibles.",
+      "dependenciaHabitual": "Cámara en lo Contencioso Administrativo / Órganos competentes",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CAD-02"
+    },
+    {
+      "fuero": "Contencioso Administrativo",
+      "tipo": "Audiencia de explicaciones periciales",
+      "descripcion": "Escucha aclaraciones de expertos sobre informes técnicos incorporados al expediente.",
+      "dependenciaHabitual": "Cámara en lo Contencioso Administrativo / Órganos competentes",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CAD-03"
+    },
+    {
+      "fuero": "Contencioso Administrativo",
+      "tipo": "Audiencia de conciliación",
+      "descripcion": "Procura acuerdos cuando la materia y la representación estatal lo permiten.",
+      "dependenciaHabitual": "Cámara en lo Contencioso Administrativo / Órganos competentes",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CAD-04"
+    },
+    {
+      "fuero": "Contencioso Administrativo",
+      "tipo": "Audiencia para producción de prueba",
+      "descripcion": "Recibe medios de prueba oral determinados por el órgano judicial.",
+      "dependenciaHabitual": "Cámara en lo Contencioso Administrativo / Órganos competentes",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CAD-05"
+    },
+    {
+      "fuero": "Contencioso Administrativo",
+      "tipo": "Audiencia por cuestiones incidentales",
+      "descripcion": "Trata incidentes para los que el tribunal habilita intervención oral.",
+      "dependenciaHabitual": "Cámara en lo Contencioso Administrativo / Órganos competentes",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "CAD-06"
+    },
+    {
+      "fuero": "Justicia de Paz y Faltas",
+      "tipo": "Audiencia de conciliación",
+      "descripcion": "Promueve una solución acordada a conflictos de competencia del juzgado.",
+      "dependenciaHabitual": "Juzgados de Paz / Juzgados de Paz y Faltas",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PAZ-01"
+    },
+    {
+      "fuero": "Justicia de Paz y Faltas",
+      "tipo": "Audiencia testimonial",
+      "descripcion": "Recibe declaraciones de testigos en causas de competencia del órgano.",
+      "dependenciaHabitual": "Juzgados de Paz / Juzgados de Paz y Faltas",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PAZ-02"
+    },
+    {
+      "fuero": "Justicia de Paz y Faltas",
+      "tipo": "Audiencia de declaración de parte",
+      "descripcion": "Escucha declaraciones de los litigantes según el trámite aplicable.",
+      "dependenciaHabitual": "Juzgados de Paz / Juzgados de Paz y Faltas",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PAZ-03"
+    },
+    {
+      "fuero": "Justicia de Paz y Faltas",
+      "tipo": "Audiencia de prueba",
+      "descripcion": "Produce o recibe las pruebas convocadas para una sesión oral.",
+      "dependenciaHabitual": "Juzgados de Paz / Juzgados de Paz y Faltas",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PAZ-04"
+    },
+    {
+      "fuero": "Justicia de Paz y Faltas",
+      "tipo": "Audiencia de descargo contravencional",
+      "descripcion": "Da oportunidad de defensa y descargo frente a una imputación contravencional.",
+      "dependenciaHabitual": "Juzgados de Paz / Juzgados de Paz y Faltas",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PAZ-05"
+    },
+    {
+      "fuero": "Justicia de Paz y Faltas",
+      "tipo": "Audiencia de conciliación contravencional",
+      "descripcion": "Busca una solución permitida por las normas contravencionales.",
+      "dependenciaHabitual": "Juzgados de Paz / Juzgados de Paz y Faltas",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "No procede en supuestos expresamente excluidos, como violencia familiar o de género.",
+      "codigo": "PAZ-06"
+    },
+    {
+      "fuero": "Justicia de Paz y Faltas",
+      "tipo": "Audiencia por incidentes",
+      "descripcion": "Resuelve cuestiones accesorias cuando se dispone tratamiento oral.",
+      "dependenciaHabitual": "Juzgados de Paz / Juzgados de Paz y Faltas",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "PAZ-07"
+    },
+    {
+      "fuero": "Justicia de Paz y Faltas",
+      "tipo": "Audiencia de ratificación de denuncia",
+      "descripcion": "Permite ratificar o ampliar una denuncia cuando el trámite lo requiere.",
+      "dependenciaHabitual": "Juzgados de Paz / Juzgados de Paz y Faltas",
+      "clasificacion": "Diligencia procesal",
+      "observaciones": "No siempre constituye una audiencia formal.",
+      "codigo": "PAZ-08"
+    },
+    {
+      "fuero": "Instancias Superiores",
+      "tipo": "Audiencia de informes orales",
+      "descripcion": "Recibe exposiciones orales de las partes cuando el recurso o procedimiento lo admite.",
+      "dependenciaHabitual": "Superior Tribunal de Justicia",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "SUP-01"
+    },
+    {
+      "fuero": "Instancias Superiores",
+      "tipo": "Audiencia de recepción de prueba",
+      "descripcion": "Recibe prueba admitida excepcionalmente en la instancia revisora.",
+      "dependenciaHabitual": "Cámaras de Apelaciones",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "SUP-02"
+    },
+    {
+      "fuero": "Instancias Superiores",
+      "tipo": "Audiencia de tratamiento oral de recursos",
+      "descripcion": "Escucha posiciones de las partes sobre un recurso en los supuestos admitidos.",
+      "dependenciaHabitual": "Cámaras de Apelaciones",
+      "clasificacion": "Audiencia judicial",
+      "observaciones": "",
+      "codigo": "SUP-03"
+    },
+    {
+      "fuero": "Mediación",
+      "tipo": "Encuentro de mediación judicial",
+      "descripcion": "Facilita el diálogo entre participantes para alcanzar acuerdos en asuntos derivados judicialmente.",
+      "dependenciaHabitual": "Centro Público de Mediación / Sedes habilitadas",
+      "clasificacion": "Encuentro de mediación",
+      "observaciones": "No es una audiencia jurisdiccional.",
+      "codigo": "MED-01"
+    },
+    {
+      "fuero": "Mediación",
+      "tipo": "Encuentro de mediación extrajudicial",
+      "descripcion": "Permite gestionar consensualmente controversias fuera del proceso judicial.",
+      "dependenciaHabitual": "Centro Público de Mediación / Sedes habilitadas",
+      "clasificacion": "Encuentro de mediación",
+      "observaciones": "No es una audiencia jurisdiccional.",
+      "codigo": "MED-02"
+    },
+    {
+      "fuero": "Mediación",
+      "tipo": "Encuentro de mediación comunitaria",
+      "descripcion": "Aborda conflictos comunitarios mediante herramientas colaborativas.",
+      "dependenciaHabitual": "Centro Público de Mediación / Sedes habilitadas",
+      "clasificacion": "Encuentro de mediación",
+      "observaciones": "No es una audiencia jurisdiccional.",
+      "codigo": "MED-03"
+    }
+  ]
+}
