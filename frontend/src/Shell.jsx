@@ -150,6 +150,7 @@ export default function Shell({ sesion, dependencia, onDependencia }) {
             datos={datosAvisos}
             usuario={sesion.usuario}
             onElegir={(item) => {
+              setTab("agenda");
               setAvisosAbiertos(false);
               setAbrir({ id: item.id, fecha: item.fecha, marca: Date.now() });
             }}
@@ -174,7 +175,7 @@ function Avisos({ datos, usuario, onElegir }) {
 
   return (
     <div className="stack">
-      <p className="muted">Pendientes a cargo de {String(usuario || "").trim()}. Elija una para editarla.</p>
+      <p className="muted">Pendientes a cargo de {String(usuario || "").trim()}. Elija una para verla en el calendario.</p>
       {datos.atrasados?.length > 0 && (
         <section>
           <h4>Atrasados sin resolver ({datos.atrasados.length})</h4>

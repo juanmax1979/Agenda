@@ -158,9 +158,14 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
 
   useEffect(() => {
     if (!abrir?.id || seleccionado !== abrir.fecha) return;
-    const ev = eventos.find((item) => item.id === abrir.id);
-    if (!ev) return;
-    if (abrirEdicion(ev)) onAbierto?.();
+    const delDia = eventos.filter((item) => item.fecha === abrir.fecha);
+    if (!delDia.length) return;
+    const ev = delDia.find((item) => Number(item.id) === Number(abrir.id));
+    if (ev) setActivo(ev);
+    requestAnimationFrame(() => {
+      document.querySelector(".cal-row button.sel")?.scrollIntoView({ block: "center", inline: "nearest" });
+    });
+    onAbierto?.();
   }, [eventos, abrir, seleccionado]);
 
   async function refrescar(fecha) {
