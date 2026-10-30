@@ -35,7 +35,6 @@ function App() {
       sesion={acceso}
       dependencia={dependencia}
       onDependencia={setDependencia}
-      onCambiarDependencia={() => setDependencia(null)}
     />
   );
 }

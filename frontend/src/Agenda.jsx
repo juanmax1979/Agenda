@@ -61,7 +61,7 @@ const VACIO = {
   otraOficina: "",
 };
 
-export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }) {
+export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, onCambio }) {
   const [centro, setCentro] = useState(`${hoy().slice(0, 7)}-01`);
   const [seleccionado, setSeleccionado] = useState(hoy());
   const [dias, setDias] = useState({});
@@ -150,6 +150,7 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
   async function refrescar(fecha) {
     if (fecha) setSeleccionado(fecha);
     await Promise.all([cargarCalendario(), cargarDia()]);
+    onCambio?.();
   }
 
   function abrirNuevo(precarga = {}) {
@@ -208,6 +209,7 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes }
       const dia = await api(`/agenda?${params}`);
       setEventos(dia.eventos);
       await cargarCalendario();
+      onCambio?.();
     } catch (err) {
       if (err.data?.code === "INHABIL") {
         if (window.confirm(`${err.data.motivo}\n\n¿Cargar igualmente?`)) return guardarForm(true, formulario);

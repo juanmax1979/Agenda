@@ -154,25 +154,40 @@ router.get("/dia", (req, res) => {
 
 router.get("/avisos", (req, res) => {
   const hoy = isoFecha(new Date());
+  const operador = String(req.usuario || "").trim().toLowerCase();
   const filtroHoy = [];
   const filtroAtrasados = [];
+  const filtroProximos = [];
   const clausulaHoy = sqlDependencia(req.query, filtroHoy);
   const clausulaAtrasados = sqlDependencia(req.query, filtroAtrasados);
+  const clausulaProximos = sqlDependencia(req.query, filtroProximos);
+  const clausulaOperador = ` AND estado = 'Pendiente' AND lower(coalesce(nullif(responsable, ''), usuario_carga)) = ?`;
+  filtroHoy.push(operador);
+  filtroAtrasados.push(operador);
+  filtroProximos.push(operador);
   const deHoy = getDb()
     .prepare(
       `SELECT tipo, expediente, hora, detenido FROM agenda
-       WHERE fecha = ? AND estado = 'Pendiente'${clausulaHoy} ORDER BY hora ASC`
+       WHERE fecha = ?${clausulaHoy}${clausulaOperador} ORDER BY hora ASC`
     )
     .all(hoy, ...filtroHoy);
   const atrasados = getDb()
     .prepare(
-      `SELECT tipo, expediente, fecha, detenido FROM agenda
-       WHERE fecha < ? AND estado = 'Pendiente'${clausulaAtrasados} ORDER BY fecha ASC`
+      `SELECT tipo, expediente, fecha, hora, detenido FROM agenda
+       WHERE fecha < ?${clausulaAtrasados}${clausulaOperador} ORDER BY fecha ASC, hora ASC`
     )
     .all(hoy, ...filtroAtrasados);
+  const proximos = getDb()
+    .prepare(
+      `SELECT tipo, expediente, fecha, hora, detenido FROM agenda
+       WHERE fecha > ?${clausulaProximos}${clausulaOperador} ORDER BY fecha ASC, hora ASC`
+    )
+    .all(hoy, ...filtroProximos);
+  const marcar = (fila) => ({ ...fila, detenido: Number(fila.detenido) === 1 });
   res.json({
-    hoy: deHoy.map((f) => ({ ...f, detenido: Number(f.detenido) === 1 })),
-    atrasados: atrasados.map((f) => ({ ...f, detenido: Number(f.detenido) === 1 })),
+    hoy: deHoy.map(marcar),
+    atrasados: atrasados.map(marcar),
+    proximos: proximos.map(marcar),
   });
 });
 

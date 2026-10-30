@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api.js";
 import Modal from "./Modal.jsx";
 import Agenda from "./Agenda.jsx";
@@ -9,26 +9,41 @@ const TABS = [
   { id: "admin", label: "Administración", admin: true },
 ];
 
-export default function Shell({ sesion, dependencia, onDependencia, onCambiarDependencia }) {
+export default function Shell({ sesion, dependencia, onDependencia }) {
   const [tab, setTab] = useState("agenda");
   const [catalogos, setCatalogos] = useState(null);
   const [error, setError] = useState("");
-  const [avisos, setAvisos] = useState(null);
+  const [datosAvisos, setDatosAvisos] = useState({ hoy: [], atrasados: [] });
+  const [avisosAbiertos, setAvisosAbiertos] = useState(false);
   const fuentes = sesion;
+  const pendientes = (datosAvisos.hoy?.length || 0)
+    + (datosAvisos.atrasados?.length || 0)
+    + (datosAvisos.proximos?.length || 0);
 
-  useEffect(() => {
-    if (!dependencia) return;
+  const cargarAvisos = useCallback(async () => {
+    if (!dependencia) return { hoy: [], atrasados: [] };
     const params = new URLSearchParams({
       sistema: dependencia.sistema,
       codigo: dependencia.codigo,
       nombreDependencia: dependencia.nombre || "",
     });
-    api(`/agenda/avisos?${params}`)
+    const data = await api(`/agenda/avisos?${params}`);
+    setDatosAvisos(data);
+    return data;
+  }, [dependencia]);
+
+  useEffect(() => {
+    let vigente = true;
+    cargarAvisos()
       .then((data) => {
-        if (data.hoy.length || data.atrasados.length) setAvisos(data);
+        const hay = (data.hoy?.length || 0) + (data.atrasados?.length || 0) + (data.proximos?.length || 0);
+        if (vigente && hay) setAvisosAbiertos(true);
       })
       .catch(() => {});
-  }, [dependencia]);
+    return () => {
+      vigente = false;
+    };
+  }, [cargarAvisos]);
 
   useEffect(() => {
     api("/agenda/catalogos")
@@ -75,19 +90,26 @@ export default function Shell({ sesion, dependencia, onDependencia, onCambiarDep
               </select>
             </label>
           )}
-          <button type="button" className="btn btn-ghost" onClick={onCambiarDependencia}>
-            Cambiar dependencia
-          </button>
-          <button type="button" className="btn btn-ghost" onClick={() => {
-            if (!dependencia) return;
-            const params = new URLSearchParams({
-              sistema: dependencia.sistema,
-              codigo: dependencia.codigo,
-              nombreDependencia: dependencia.nombre || "",
-            });
-            api(`/agenda/avisos?${params}`).then(setAvisos).catch((e) => setError(e.message));
-          }}>
-            Avisos
+          <button
+            type="button"
+            className="aviso-btn"
+            title="Avisos"
+            aria-label={pendientes ? `Avisos, ${pendientes} pendientes` : "Avisos"}
+            onClick={() => {
+              cargarAvisos()
+                .then(() => setAvisosAbiertos(true))
+                .catch((e) => setError(e.message));
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 22a2.4 2.4 0 0 0 2.35-2h-4.7A2.4 2.4 0 0 0 12 22zm7.2-6.2V11a7.2 7.2 0 0 0-5.4-6.97V3.2a1.8 1.8 0 1 0-3.6 0v.83A7.2 7.2 0 0 0 4.8 11v4.8L3 17.6v1.2h18v-1.2l-1.8-1.8z"
+              />
+            </svg>
+            {pendientes > 0 && (
+              <span className="aviso-burbuja">{pendientes > 99 ? "99+" : pendientes}</span>
+            )}
           </button>
         </div>
       </header>
@@ -113,23 +135,25 @@ export default function Shell({ sesion, dependencia, onDependencia, onCambiarDep
             usuario={sesion.usuario}
             dependencia={dependencia}
             fuentes={fuentes}
+            onCambio={cargarAvisos}
           />
         )}
         {catalogos && tab === "admin" && sesion.rol === "admin" && <Admin />}
       </main>
 
-      {avisos && (
-        <Modal title="Agenda — Avisos" onClose={() => setAvisos(null)}>
-          <Avisos datos={avisos} />
+      {avisosAbiertos && (
+        <Modal title="Agenda — Avisos" onClose={() => setAvisosAbiertos(false)}>
+          <Avisos datos={datosAvisos} usuario={sesion.usuario} />
         </Modal>
       )}
     </div>
   );
 }
 
-function Avisos({ datos }) {
+function Avisos({ datos, usuario }) {
   return (
     <div className="stack">
+      <p className="muted">Pendientes a cargo de {String(usuario || "").trim()}.</p>
       {datos.atrasados?.length > 0 && (
         <section>
           <h4>Atrasados sin resolver ({datos.atrasados.length})</h4>
@@ -157,7 +181,23 @@ function Avisos({ datos }) {
           </ul>
         </section>
       )}
-      {!datos.hoy?.length && !datos.atrasados?.length && <p>No hay eventos pendientes para hoy ni atrasados.</p>}
+      {datos.proximos?.length > 0 && (
+        <section>
+          <h4>Próximas pendientes ({datos.proximos.length})</h4>
+          <ul className="aviso-list">
+            {datos.proximos.slice(0, 15).map((f, i) => (
+              <li key={`p-${i}`}>
+                {f.fecha.split("-").reverse().join("/")} {f.hora || ""} — {f.tipo} — {f.expediente}
+                {f.detenido ? " · PRESO" : ""}
+              </li>
+            ))}
+          </ul>
+          {datos.proximos.length > 15 && <p className="muted">y {datos.proximos.length - 15} más.</p>}
+        </section>
+      )}
+      {!datos.hoy?.length && !datos.atrasados?.length && !datos.proximos?.length && (
+        <p>No hay audiencias ni eventos pendientes a cargo de {String(usuario || "").trim()}.</p>
+      )}
     </div>
   );
 }
