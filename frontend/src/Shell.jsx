@@ -13,8 +13,9 @@ export default function Shell({ sesion, dependencia, onDependencia }) {
   const [tab, setTab] = useState("agenda");
   const [catalogos, setCatalogos] = useState(null);
   const [error, setError] = useState("");
-  const [datosAvisos, setDatosAvisos] = useState({ hoy: [], atrasados: [] });
+  const [datosAvisos, setDatosAvisos] = useState({ hoy: [], atrasados: [], proximos: [] });
   const [avisosAbiertos, setAvisosAbiertos] = useState(false);
+  const [abrir, setAbrir] = useState(null);
   const fuentes = sesion;
   const pendientes = (datosAvisos.hoy?.length || 0)
     + (datosAvisos.atrasados?.length || 0)
@@ -136,6 +137,8 @@ export default function Shell({ sesion, dependencia, onDependencia }) {
             dependencia={dependencia}
             fuentes={fuentes}
             onCambio={cargarAvisos}
+            abrir={abrir}
+            onAbierto={() => setAbrir(null)}
           />
         )}
         {catalogos && tab === "admin" && sesion.rol === "admin" && <Admin />}
@@ -143,26 +146,43 @@ export default function Shell({ sesion, dependencia, onDependencia }) {
 
       {avisosAbiertos && (
         <Modal title="Agenda — Avisos" onClose={() => setAvisosAbiertos(false)}>
-          <Avisos datos={datosAvisos} usuario={sesion.usuario} />
+          <Avisos
+            datos={datosAvisos}
+            usuario={sesion.usuario}
+            onElegir={(item) => {
+              setAvisosAbiertos(false);
+              setAbrir({ id: item.id, fecha: item.fecha, marca: Date.now() });
+            }}
+          />
         </Modal>
       )}
     </div>
   );
 }
 
-function Avisos({ datos, usuario }) {
+function Avisos({ datos, usuario, onElegir }) {
+  function fila(grupo, item, texto) {
+    return (
+      <li key={`${grupo}-${item.id}`}>
+        <button type="button" className="aviso-item" onClick={() => onElegir(item)}>
+          {texto}
+          {item.detenido ? " · PRESO" : ""}
+        </button>
+      </li>
+    );
+  }
+
   return (
     <div className="stack">
-      <p className="muted">Pendientes a cargo de {String(usuario || "").trim()}.</p>
+      <p className="muted">Pendientes a cargo de {String(usuario || "").trim()}. Elija una para editarla.</p>
       {datos.atrasados?.length > 0 && (
         <section>
           <h4>Atrasados sin resolver ({datos.atrasados.length})</h4>
           <ul className="aviso-list">
-            {datos.atrasados.slice(0, 10).map((f, i) => (
-              <li key={`a-${i}`}>
-                {f.fecha.split("-").reverse().join("/")} — {f.tipo} — {f.expediente}
-                {f.detenido ? " · PRESO" : ""}
-              </li>
+            {datos.atrasados.slice(0, 10).map((f) => fila(
+              "a",
+              f,
+              `${f.fecha.split("-").reverse().join("/")} — ${f.tipo} — ${f.expediente}`
             ))}
           </ul>
           {datos.atrasados.length > 10 && <p className="muted">y {datos.atrasados.length - 10} más.</p>}
@@ -172,11 +192,10 @@ function Avisos({ datos, usuario }) {
         <section>
           <h4>Para hoy ({datos.hoy.length})</h4>
           <ul className="aviso-list">
-            {datos.hoy.map((f, i) => (
-              <li key={`h-${i}`}>
-                {f.hora || "--:--"} — {f.tipo} — {f.expediente}
-                {f.detenido ? " · PRESO" : ""}
-              </li>
+            {datos.hoy.map((f) => fila(
+              "h",
+              f,
+              `${f.hora || "--:--"} — ${f.tipo} — ${f.expediente}`
             ))}
           </ul>
         </section>
@@ -185,11 +204,10 @@ function Avisos({ datos, usuario }) {
         <section>
           <h4>Próximas pendientes ({datos.proximos.length})</h4>
           <ul className="aviso-list">
-            {datos.proximos.slice(0, 15).map((f, i) => (
-              <li key={`p-${i}`}>
-                {f.fecha.split("-").reverse().join("/")} {f.hora || ""} — {f.tipo} — {f.expediente}
-                {f.detenido ? " · PRESO" : ""}
-              </li>
+            {datos.proximos.slice(0, 15).map((f) => fila(
+              "p",
+              f,
+              `${f.fecha.split("-").reverse().join("/")} ${f.hora || ""} — ${f.tipo} — ${f.expediente}`
             ))}
           </ul>
           {datos.proximos.length > 15 && <p className="muted">y {datos.proximos.length - 15} más.</p>}

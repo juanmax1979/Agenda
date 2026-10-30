@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api.js";
+import { CampoFecha, fechaVisible } from "./Fecha.jsx";
 
 export default function Admin() {
   const [vista, setVista] = useState("usuarios");
@@ -39,7 +40,7 @@ function Auditoria() {
           <tbody>
             {filas.map((f, i) => (
               <tr key={i}>
-                <td>{f.fecha}</td><td>{f.accion}</td><td>{f.registro_id}</td>
+                <td>{fechaVisible(f.fecha)}</td><td>{f.accion}</td><td>{f.registro_id}</td>
                 <td>{f.detalle}</td><td>{f.usuario}</td><td>{f.pc}</td>
               </tr>
             ))}
@@ -203,7 +204,7 @@ function Feriados() {
           </select>
         </label>
         {tipo === "EXCEPCIONAL" ? (
-          <label>Fecha<input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required /></label>
+          <label>Fecha<CampoFecha value={fecha} onChange={setFecha} required /></label>
         ) : (
           <>
             <label>Día<input type="number" min="1" max="31" value={dia} onChange={(e) => setDia(e.target.value)} required /></label>

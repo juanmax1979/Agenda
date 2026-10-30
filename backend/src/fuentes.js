@@ -223,6 +223,41 @@ async function dependenciaHabilitada(sistema, codigo) {
   return encontrada;
 }
 
+function firmaDependencia(texto) {
+  return String(texto || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/n[º°]\.?\s*/gi, "n ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function correspondeADependencia(radicacion, dependencia) {
+  const rad = firmaDependencia(radicacion);
+  const nombre = firmaDependencia(dependencia?.nombre);
+  const codigo = firmaDependencia(dependencia?.codigo);
+  if (!rad) return false;
+  if (nombre && ` ${rad} `.includes(` ${nombre} `)) return true;
+  if (codigo && (rad === codigo || rad.split(" ").includes(codigo))) return true;
+  return false;
+}
+
+function resultadoExpediente(base, dependencia) {
+  const corresponde = base.encontrado && (
+    base.origen === "IURE" || correspondeADependencia(base.radicacion, dependencia)
+  );
+  let mensaje = "";
+  if (!corresponde && base.encontrado) {
+    const donde = base.radicacion ? ` Radica en ${base.radicacion}.` : "";
+    mensaje = `El expediente ${base.numero} no corresponde a ${dependencia.nombre}.${donde}`;
+  } else if (!base.encontrado) {
+    mensaje = `No se encontró el expediente ${base.numero} en ${dependencia.sistema} para ${dependencia.nombre}.`;
+  }
+  return { ...base, corresponde, mensaje };
+}
+
 async function datosExpediente({ numero, dependencia }) {
   const nro = String(numero || "").trim().slice(0, 50);
   if (!nro) {
@@ -237,8 +272,10 @@ async function datosExpediente({ numero, dependencia }) {
       .input("NroExpediente", sql.VarChar(50), nro)
       .execute("dbo.procNumeradorDatosExpteCaratProcDepRadic");
     const fila = result.recordset?.[0];
-    if (!fila) return { numero: nro, encontrado: false, origen: "SIGI" };
-    return {
+    if (!fila) {
+      return resultadoExpediente({ numero: nro, encontrado: false, origen: "SIGI", radicacion: "" }, dependencia);
+    }
+    return resultadoExpediente({
       numero: nro,
       encontrado: true,
       origen: "SIGI",
@@ -246,7 +283,7 @@ async function datosExpediente({ numero, dependencia }) {
       proceso: fila.Proceso || "",
       radicacion: fila.DependRadicExpte || "",
       detalle: "",
-    };
+    }, dependencia);
   }
   const idDependencia = Number(dependencia.codigo);
   const idFuero = Number(dependencia.fueroId);
@@ -263,8 +300,10 @@ async function datosExpediente({ numero, dependencia }) {
     .input("IdFuero", sql.Int, idFuero)
     .execute("dbo.spGetDatosExpedienteNumerador");
   const fila = result.recordset?.[0];
-  if (!fila) return { numero: nro, encontrado: false, origen: "IURE" };
-  return {
+  if (!fila) {
+    return resultadoExpediente({ numero: nro, encontrado: false, origen: "IURE", radicacion: "" }, dependencia);
+  }
+  return resultadoExpediente({
     numero: nro,
     encontrado: true,
     origen: "IURE",
@@ -272,7 +311,7 @@ async function datosExpediente({ numero, dependencia }) {
     proceso: "",
     radicacion: "",
     detalle: fila.descripcion || "",
-  };
+  }, dependencia);
 }
 
 module.exports = {

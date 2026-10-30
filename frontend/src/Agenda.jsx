@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, descargar } from "./api.js";
 import Modal from "./Modal.jsx";
 import Gestion from "./Gestion.jsx";
+import { CampoFecha } from "./Fecha.jsx";
 
 const MESES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
@@ -61,7 +62,7 @@ const VACIO = {
   otraOficina: "",
 };
 
-export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, onCambio }) {
+export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, onCambio, abrir, onAbierto }) {
   const [centro, setCentro] = useState(`${hoy().slice(0, 7)}-01`);
   const [seleccionado, setSeleccionado] = useState(hoy());
   const [dias, setDias] = useState({});
@@ -147,6 +148,21 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
     cargarDia().catch((err) => setError(err.message));
   }, [cargarDia]);
 
+  useEffect(() => {
+    if (!abrir?.id || !abrir.fecha) return;
+    setQ("");
+    setPendientes(false);
+    setSeleccionado(abrir.fecha);
+    setCentro(`${abrir.fecha.slice(0, 7)}-01`);
+  }, [abrir]);
+
+  useEffect(() => {
+    if (!abrir?.id || seleccionado !== abrir.fecha) return;
+    const ev = eventos.find((item) => item.id === abrir.id);
+    if (!ev) return;
+    if (abrirEdicion(ev)) onAbierto?.();
+  }, [eventos, abrir, seleccionado]);
+
   async function refrescar(fecha) {
     if (fecha) setSeleccionado(fecha);
     await Promise.all([cargarCalendario(), cargarDia()]);
@@ -159,10 +175,13 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
   }
 
   function abrirEdicion(ev = activo) {
-    if (!ev) return setError("Seleccione un evento.");
+    if (!ev) {
+      setError("Seleccione un evento.");
+      return false;
+    }
     if (rol !== "admin" && ev.usuario !== usuario) {
       const ok = window.confirm(`Este evento fue cargado por ${ev.usuario}.\n¿Modificar igualmente? La modificación queda en auditoría.`);
-      if (!ok) return;
+      if (!ok) return false;
     }
     setActivo(ev);
     setForm({
@@ -174,16 +193,20 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
       codigoTipo: ev.codigoTipo || "",
       clasificacion: ev.clasificacion || "",
       expediente: ev.expediente,
+      expedienteOriginal: ev.expediente || "",
       fecha: ev.fecha,
       hora: ev.hora || "09:00",
       descripcion: ev.descripcion,
       anotacion: ev.anotacion,
       detenido: ev.detenido,
+      estado: ev.estado || "Pendiente",
+      estadoOriginal: ev.estado || "Pendiente",
       responsable: ev.responsable || ev.usuario,
       participantes: [],
       otraOficina: ev.participantes || "",
     });
     setError("");
+    return true;
   }
 
   async function guardarForm(confirmarInhabil = false, formulario = form) {
@@ -193,6 +216,9 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
       const res = form.id
         ? await api(`/agenda/${form.id}`, { method: "PUT", body })
         : await api("/agenda", { method: "POST", body });
+      if (formulario.id && formulario.estado && formulario.estado !== formulario.estadoOriginal) {
+        await api(`/agenda/${formulario.id}/estado`, { method: "POST", body: { estado: formulario.estado } });
+      }
       const fecha = res.fecha || form.fecha;
       setForm(null);
       setSeleccionado(fecha);
@@ -210,6 +236,27 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
       setEventos(dia.eventos);
       await cargarCalendario();
       onCambio?.();
+      if (
+        formulario.id
+        && formulario.estado
+        && formulario.estado !== formulario.estadoOriginal
+        && (formulario.estado === "Fracasada" || formulario.estado === "Suspendida")
+        && window.confirm(`El evento quedó como ${formulario.estado}.\n\n¿Desea fijar nueva fecha y hora ahora?`)
+      ) {
+        abrirNuevo({
+          tipo: formulario.tipo,
+          codigoTipo: formulario.codigoTipo,
+          fuero: formulario.fuero,
+          clasificacion: formulario.clasificacion,
+          clase: formulario.clase,
+          alcance: formulario.alcance,
+          expediente: formulario.expediente,
+          descripcion: formulario.descripcion,
+          detenido: formulario.detenido,
+          anotacion: "",
+          responsable: formulario.responsable,
+        });
+      }
     } catch (err) {
       if (err.data?.code === "INHABIL") {
         if (window.confirm(`${err.data.motivo}\n\n¿Cargar igualmente?`)) return guardarForm(true, formulario);
@@ -253,7 +300,7 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
     if (rol !== "admin" && !propio) {
       return setError("Solo quien cargó el evento, su responsable o el administrador general pueden borrarlo.");
     }
-    if (!window.confirm(`¿BORRAR DEFINITIVAMENTE este evento?\n\n${activo.tipo} — ${activo.expediente}\n${activo.fecha} ${activo.hora}\n\nPara preservar el historial conviene marcarlo Fracasada o Suspendida.`)) return;
+    if (!window.confirm(`¿BORRAR DEFINITIVAMENTE este evento?\n\n${activo.tipo} — ${activo.expediente}\n${ddmm(activo.fecha)} ${activo.hora}\n\nPara preservar el historial conviene marcarlo Fracasada o Suspendida.`)) return;
     try {
       await api(`/agenda/${activo.id}`, { method: "DELETE" });
       setActivo(null);
@@ -281,7 +328,7 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
     <section className="panel agenda">
       <header className="panel-head">
         <h2>Agenda</h2>
-        <button type="button" className="btn btn-primary" onClick={() => abrirNuevo()} disabled={!dependencia}>Nueva audiencia</button>
+        <button type="button" className="btn btn-primary" onClick={() => abrirNuevo()} disabled={!dependencia}>Nuevo Evento</button>
       </header>
       <div className="agenda-tools">
         <button type="button" onClick={borrar}>Eliminar</button>
@@ -350,7 +397,7 @@ export default function Agenda({ catalogos, rol, usuario, dependencia, fuentes, 
               <tr
                 key={ev.id}
                 className={`tag-${ev.tag}${activo?.id === ev.id ? " selected" : ""}`}
-                onClick={() => setActivo(ev)}
+                onClick={() => abrirEdicion(ev)}
                 onDoubleClick={() => abrirEdicion(ev)}
               >
                 <td>{ev.hecho}</td>
@@ -481,12 +528,14 @@ function FormEvento({ form, setForm, catalogo, integrantes, usuario, rol, fuente
   }, [form.clase]);
 
   function cambiarClase(clase) {
+    setCausa(null);
     setForm({
       ...form,
       clase,
       tipo: clase === "licencia" ? "Licencia" : "",
       codigoTipo: "",
       clasificacion: "",
+      expediente: clase === "licencia" ? "" : form.expediente,
       hora: clase === "audiencia" ? (form.hora || "09:00") : "",
       alcance: clase === "audiencia" && form.alcance === "general" ? form.alcance : form.alcance,
     });
@@ -525,7 +574,7 @@ function FormEvento({ form, setForm, catalogo, integrantes, usuario, rol, fuente
       });
       const data = await api(`/agenda/expediente?${params}`);
       setCausa(data);
-      if (data.encontrado && data.caratula) {
+      if (data.encontrado && data.corresponde && data.caratula) {
         setForm((prev) => (
           prev.descripcion.trim() ? prev : { ...prev, descripcion: data.caratula }
         ));
@@ -541,9 +590,16 @@ function FormEvento({ form, setForm, catalogo, integrantes, usuario, rol, fuente
 
   async function enviar(event) {
     event.preventDefault();
-    const data = form.expediente.trim() ? await buscarCausa() : null;
-    const descripcion = form.descripcion.trim() || (data?.encontrado ? data.caratula : "");
     const responsable = form.alcance === "agente" ? usuario : (form.responsable || usuario);
+    if (form.clase === "licencia") {
+      onSubmit({ ...form, expediente: "", responsable });
+      return;
+    }
+    const data = form.expediente.trim() ? await buscarCausa() : null;
+    const mismoExpediente = Boolean(form.id)
+      && String(form.expedienteOriginal || "").trim().toUpperCase() === form.expediente.trim().toUpperCase();
+    if (form.clase === "audiencia" && !mismoExpediente && !data?.corresponde) return;
+    const descripcion = form.descripcion.trim() || (data?.encontrado && data?.corresponde ? data.caratula : "");
     onSubmit({ ...form, descripcion, responsable });
   }
 
@@ -618,24 +674,27 @@ function FormEvento({ form, setForm, catalogo, integrantes, usuario, rol, fuente
         <label>Expediente
           <input
             value={form.expediente}
-            onChange={(e) => setForm({ ...form, expediente: e.target.value })}
+            onChange={(e) => { setCausa(null); setForm({ ...form, expediente: e.target.value }); }}
             onBlur={buscarCausa}
             required
           />
         </label>
       )}
-      {!pideExpediente && (
+      {form.clase === "evento" && (
         <label>Expediente (opcional)
           <input
             value={form.expediente}
-            onChange={(e) => setForm({ ...form, expediente: e.target.value })}
+            onChange={(e) => { setCausa(null); setForm({ ...form, expediente: e.target.value }); }}
             onBlur={buscarCausa}
           />
         </label>
       )}
       {buscando && <p className="muted">Buscando la causa…</p>}
       {causa?.error && <p className="form-error">{causa.error}</p>}
-      {causa?.encontrado && (
+      {form.clase === "audiencia" && causa && causa.corresponde === false && causa.mensaje && (
+        <p className="form-error">{causa.mensaje}</p>
+      )}
+      {causa?.encontrado && (form.clase !== "audiencia" || causa.corresponde) && (
         <p className="ok-text">
           {causa.origen}: {causa.caratula}
           {causa.proceso ? ` — ${causa.proceso}` : ""}
@@ -643,11 +702,11 @@ function FormEvento({ form, setForm, catalogo, integrantes, usuario, rol, fuente
           {causa.radicacion ? ` — Radica en ${causa.radicacion}` : ""}
         </p>
       )}
-      {causa && !causa.encontrado && !causa.error && (
+      {form.clase !== "audiencia" && causa && !causa.encontrado && !causa.error && (
         <p className="inhabil">No se encontró el expediente en {dependencia?.sistema}.</p>
       )}
       <div className="split">
-        <label>Fecha<input type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} required /></label>
+        <label>Fecha<CampoFecha value={form.fecha} onChange={(fecha) => setForm({ ...form, fecha })} required /></label>
         <label>Hora
           <input value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} placeholder="09:00" required={form.clase === "audiencia"} />
         </label>
@@ -656,6 +715,16 @@ function FormEvento({ form, setForm, catalogo, integrantes, usuario, rol, fuente
         <textarea rows={3} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
       </label>
       <label>Anotación<input value={form.anotacion} onChange={(e) => setForm({ ...form, anotacion: e.target.value })} /></label>
+      {form.id && (
+        <label>Estado
+          <select value={form.estado || "Pendiente"} onChange={(e) => setForm({ ...form, estado: e.target.value })}>
+            <option>Pendiente</option>
+            <option>Realizada</option>
+            <option>Fracasada</option>
+            <option>Suspendida</option>
+          </select>
+        </label>
+      )}
       {form.clase === "audiencia" && (
         <>
           <fieldset>
@@ -829,8 +898,8 @@ function Listado({ usuarios, tipos, catalogo, dependencia, onClose, onError }) {
           </select>
         </label>
         <div className="split">
-          <label>Desde<input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></label>
-          <label>Hasta<input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></label>
+          <label>Desde<CampoFecha value={desde} onChange={setDesde} /></label>
+          <label>Hasta<CampoFecha value={hasta} onChange={setHasta} /></label>
         </div>
         <fieldset>
           <legend>Tipo</legend>

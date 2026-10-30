@@ -28,6 +28,33 @@ const {
 const router = express.Router();
 router.use(exigir);
 
+function cerrarAudienciasVencidas() {
+  const hoy = isoFecha(new Date());
+  const filas = getDb()
+    .prepare(
+      `SELECT id FROM agenda
+       WHERE estado = 'Pendiente' AND fecha < ? AND fecha GLOB '????-??-??'
+         AND (clasificacion = 'Audiencia judicial' OR lower(tipo) LIKE 'audiencia%')`
+    )
+    .all(hoy);
+  if (!filas.length) return;
+  const marca = ahoraStr();
+  tx(() => {
+    const actualizar = getDb().prepare(
+      "UPDATE agenda SET estado = 'Realizada', usuario_resolucion = ?, fecha_resolucion = ? WHERE id = ? AND estado = 'Pendiente'"
+    );
+    for (const fila of filas) {
+      actualizar.run("sistema", marca, fila.id);
+      registrarAuditoria(fila.id, "AGENDA_REALIZADA", "estado", "Pendiente", "Realizada", "sistema", "");
+    }
+  });
+}
+
+router.use((_req, _res, next) => {
+  cerrarAudienciasVencidas();
+  next();
+});
+
 router.get("/catalogos", (_req, res) => {
   const usuarios = getDb().prepare("SELECT nombre FROM usuarios ORDER BY nombre").all().map((f) => f.nombre);
   res.json({
@@ -167,19 +194,19 @@ router.get("/avisos", (req, res) => {
   filtroProximos.push(operador);
   const deHoy = getDb()
     .prepare(
-      `SELECT tipo, expediente, hora, detenido FROM agenda
+      `SELECT id, fecha, tipo, expediente, hora, detenido FROM agenda
        WHERE fecha = ?${clausulaHoy}${clausulaOperador} ORDER BY hora ASC`
     )
     .all(hoy, ...filtroHoy);
   const atrasados = getDb()
     .prepare(
-      `SELECT tipo, expediente, fecha, hora, detenido FROM agenda
+      `SELECT id, fecha, tipo, expediente, hora, detenido FROM agenda
        WHERE fecha < ?${clausulaAtrasados}${clausulaOperador} ORDER BY fecha ASC, hora ASC`
     )
     .all(hoy, ...filtroAtrasados);
   const proximos = getDb()
     .prepare(
-      `SELECT tipo, expediente, fecha, hora, detenido FROM agenda
+      `SELECT id, fecha, tipo, expediente, hora, detenido FROM agenda
        WHERE fecha > ?${clausulaProximos}${clausulaOperador} ORDER BY fecha ASC, hora ASC`
     )
     .all(hoy, ...filtroProximos);
@@ -554,6 +581,19 @@ function participantesDe(body) {
   return salida;
 }
 
+async function rechazoSiExpedienteAjeno(datos, dep, actual) {
+  if (datos.clase !== "audiencia") return null;
+  if (actual && String(actual.expediente || "") === datos.expediente) return null;
+  let causa;
+  try {
+    causa = await datosExpediente({ numero: datos.expediente, dependencia: dep });
+  } catch (error) {
+    return { status: error.status || 502, error: error.message || "No se pudo consultar el expediente." };
+  }
+  if (causa.corresponde) return null;
+  return { status: 409, error: causa.mensaje };
+}
+
 function validarCarga(body, rol) {
   const clase = claseDe(body);
   const catalogada = audienciaDeCatalogo(String(body.codigoTipo || ""), String(body.tipo || ""));
@@ -568,7 +608,7 @@ function validarCarga(body, rol) {
   }
   if (!tipo) return { error: "Seleccione el tipo de audiencia o evento." };
   if (!fecha) return { error: "Fecha inválida." };
-  const expediente = normalizarExpte(body.expediente);
+  let expediente = clase === "licencia" ? "" : normalizarExpte(body.expediente);
   if ((clase === "audiencia" || clase === "plazo") && !expediente) {
     return { error: "Ingrese el expediente." };
   }
@@ -610,6 +650,8 @@ router.post("/", async (req, res) => {
   } catch (error) {
     return res.status(error.status || 502).json({ error: error.message });
   }
+  const ajeno = await rechazoSiExpedienteAjeno(datos, dep);
+  if (ajeno) return res.status(ajeno.status).json({ error: ajeno.error });
   if (!datos.habil.ok && !req.body.confirmarInhabil) {
     return res.status(409).json({
       code: "INHABIL",
@@ -694,6 +736,8 @@ router.put("/:id", async (req, res) => {
   } catch (error) {
     return res.status(error.status || 502).json({ error: error.message });
   }
+  const ajeno = await rechazoSiExpedienteAjeno(datos, dep, actual);
+  if (ajeno) return res.status(ajeno.status).json({ error: ajeno.error });
   const responsable = datos.alcance === "agente"
     ? req.usuario
     : (String(req.body.responsable || "").trim() || req.usuario);

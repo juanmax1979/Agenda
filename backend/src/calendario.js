@@ -6,7 +6,6 @@ const {
   MESES,
   isoFecha,
   addDays,
-  fechaLarga,
   nombreDia,
 } = require("./util");
 
@@ -33,7 +32,8 @@ function esDiaHabil(fecha) {
   const feria = FERIAS_INVIERNO[fecha.getFullYear()];
   const clave = isoFecha(fecha);
   if (feria && clave >= feria[0] && clave <= feria[1]) {
-    return { ok: false, motivo: `Feria Judicial de Invierno (${feria[0]} a ${feria[1]})` };
+    const mostrar = (iso) => iso.split("-").reverse().join("/");
+    return { ok: false, motivo: `Feria Judicial de Invierno (${mostrar(feria[0])} a ${mostrar(feria[1])})` };
   }
   if (excepcionales.has(clave)) {
     return { ok: false, motivo: excepcionales.get(clave) };
@@ -48,10 +48,11 @@ function esDiaHabil(fecha) {
 }
 
 function etiquetaDia(fecha) {
-  const estado = esDiaHabil(fecha);
-  if (!estado.ok) return estado.motivo;
   const dia = nombreDia(fecha);
-  return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${fechaLarga(fecha)}`;
+  const titulo = `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${isoFecha(fecha).split("-").reverse().join("/")}`;
+  const estado = esDiaHabil(fecha);
+  if (!estado.ok) return `${titulo} — ${estado.motivo}`;
+  return titulo;
 }
 
 function sumarDiasHabiles(fechaInicio, n) {

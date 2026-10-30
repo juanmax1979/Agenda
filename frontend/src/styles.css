@@ -88,6 +88,30 @@ input:focus, select:focus, textarea:focus {
   outline: 2px solid rgba(0, 99, 142, 0.35);
   border-color: var(--blue);
 }
+.fecha-campo { position: relative; display: block; }
+.fecha-campo input[type="text"] { width: 100%; padding-right: 36px; }
+.fecha-ico {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  color: var(--navy);
+  pointer-events: none;
+}
+.fecha-nativa {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 36px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
 .caps { margin: 0; color: #8a6a12; font-weight: 700; font-size: 13px; }
 .form-error, .banner-error {
   margin: 0;
@@ -335,7 +359,20 @@ tr.selected, tr.tag-normal.selected, .agenda-table tr.selected { outline: 2px so
 }
 .modal-body { padding: 14px; }
 .icon-btn { border: 0; background: transparent; font-size: 24px; line-height: 1; color: var(--muted); }
-.aviso-list { margin: 6px 0 0; padding-left: 18px; }
+.aviso-list { margin: 6px 0 0; padding-left: 0; list-style: none; }
+.aviso-item {
+  display: block;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  text-align: left;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-weight: 550;
+}
+.aviso-item:hover { border-color: var(--navy); background: #f3f7fb; }
+.agenda-table tbody tr { cursor: pointer; }
 .plazo-box, .hint {
   background: #f7f5f0;
   border: 1px solid #e3dccb;
